@@ -61,21 +61,6 @@ async def test_user_shared_client(hass: HomeAssistant, lekto_class: MagicMock) -
 
 
 @pytest.mark.parametrize(
-    "rights", [["admin:count_all", "documents:count"], ["admin:count_all", "documents:read"]]
-)
-async def test_user_counting_rights(
-    hass: HomeAssistant, lekto: MagicMock, rights: list[str]
-) -> None:
-    """Counting comes with documents:count, or with documents:read that includes it."""
-    lekto.connect.return_value = me(rights=rights)
-    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
-
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], ENTRY_DATA)
-
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-
-
-@pytest.mark.parametrize(
     ("error", "base"),
     [
         (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),

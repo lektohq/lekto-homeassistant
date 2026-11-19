@@ -39,8 +39,7 @@ def create_client(hass: HomeAssistant, data: Mapping[str, Any]) -> LektoClient:
 
 def missing_rights(rights: Iterable[str]) -> list[str]:
     """Return the rights Home Assistant needs that ``rights`` lack, sorted."""
-    given = set(rights)
-    return sorted(right for right, holders in REQUIRED_RIGHTS.items() if given.isdisjoint(holders))
+    return sorted(REQUIRED_RIGHTS.difference(rights))
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> None:
