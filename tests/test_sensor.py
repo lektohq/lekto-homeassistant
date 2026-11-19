@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
-from homeassistant.config_entries import ConfigEntryState
+from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from pylekto import LektoConnectionError
+from pylekto import LektoAuthenticationError, LektoConnectionError, LektoForbiddenError
+from pylekto.models import Problem
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.lekto.const import DOMAIN
@@ -146,3 +147,26 @@ async def test_first_refresh_failed(
 
     assert config_entry.state is ConfigEntryState.SETUP_RETRY
     assert config_entry.error_reason_translation_key == "update_failed"
+
+
+@pytest.mark.usefixtures("loaded_entry")
+@pytest.mark.parametrize(
+    "error",
+    [
+        LektoAuthenticationError(Problem(title="Unauthorized", status=401)),
+        LektoForbiddenError(Problem(title="Forbidden", status=403)),
+    ],
+)
+async def test_update_starts_reauth(
+    hass: HomeAssistant, lekto: MagicMock, freezer: FrozenDateTimeFactory, error: Exception
+) -> None:
+    """A token Lekto stops accepting, or whose user is no admin anymore, asks for a new one."""
+    lekto.inbox.summary.side_effect = error
+
+    await _next_update(hass, freezer)
+
+    state = hass.states.get("sensor.lekto_inbox_open")
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert [flow["context"]["source"] for flow in flows] == [SOURCE_REAUTH]

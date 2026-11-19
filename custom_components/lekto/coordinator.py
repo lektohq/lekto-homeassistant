@@ -7,10 +7,11 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, override
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from pylekto import LektoError
+from pylekto import LektoAuthenticationError, LektoError, LektoForbiddenError
 
-from .const import DOMAIN
+from .const import DOMAIN, REQUIRED_RIGHTS
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -59,6 +60,17 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
                 self.client.inbox.summary(all_users=True),
                 self.client.documents.count(all_users=True),
             )
+        except LektoAuthenticationError as err:
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN, translation_key="invalid_auth"
+            ) from err
+        # Admin rights count only while the token's user is an active admin.
+        except LektoForbiddenError as err:
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN,
+                translation_key="missing_rights",
+                translation_placeholders={"rights": ", ".join(sorted(REQUIRED_RIGHTS))},
+            ) from err
         except LektoError as err:
             raise UpdateFailed(
                 translation_domain=DOMAIN,

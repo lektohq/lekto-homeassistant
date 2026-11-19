@@ -17,7 +17,7 @@ from pylekto.models import Problem
 
 from custom_components.lekto.const import DOMAIN
 
-from .const import ENTRY_DATA, INSTANCE_ID, TOKEN, URL, me
+from .const import ENTRY_DATA, INSTANCE_ID, NEW_TOKEN, TOKEN, URL, me
 
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
@@ -131,8 +131,100 @@ async def test_user_already_configured(
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], ENTRY_DATA | {CONF_API_TOKEN: "lekto_anotherMadeupToken"}
+        result["flow_id"], ENTRY_DATA | {CONF_API_TOKEN: NEW_TOKEN}
     )
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_reauth(
+    hass: HomeAssistant, lekto_class: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """A new token of the same instance replaces the old one; nothing else changes."""
+    config_entry.add_to_hass(hass)
+    result = await config_entry.start_reauth_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert config_entry.data == ENTRY_DATA | {CONF_API_TOKEN: NEW_TOKEN}
+    assert len(hass.config_entries.async_entries(DOMAIN)) == 1
+    assert lekto_class.call_args.args == (URL, NEW_TOKEN)
+
+
+@pytest.mark.parametrize(
+    ("error", "base"),
+    [
+        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
+        (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
+        (LektoResponseError("no instance_id"), "unsupported"),
+        (LektoConnectionError("refused"), "cannot_connect"),
+        (RuntimeError("surprise"), "unknown"),
+    ],
+)
+async def test_reauth_error(
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    error: Exception,
+    base: str,
+) -> None:
+    """A failed check shows its error; the next try with a fixed cause saves the token."""
+    config_entry.add_to_hass(hass)
+    lekto.connect.side_effect = error
+    result = await config_entry.start_reauth_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": base}
+
+    lekto.connect.side_effect = None
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+
+
+async def test_reauth_missing_rights(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """A new token without the rights is refused, and the old one stays."""
+    config_entry.add_to_hass(hass)
+    lekto.connect.return_value = me(rights=["documents:read"])
+    result = await config_entry.start_reauth_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "missing_rights"}
+    assert config_entry.data == ENTRY_DATA
+
+
+async def test_reauth_other_instance(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """A token of another instance is refused, and the old one stays."""
+    config_entry.add_to_hass(hass)
+    lekto.connect.return_value = me(instance_id="0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1dff")
+    result = await config_entry.start_reauth_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "unique_id_mismatch"
+    assert config_entry.data == ENTRY_DATA

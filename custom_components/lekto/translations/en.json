@@ -1,7 +1,8 @@
 {
   "config": {
     "abort": {
-      "already_configured": "This Lekto instance is already set up."
+      "already_configured": "This Lekto instance is already set up.",
+      "unique_id_mismatch": "Lekto at this address is another instance than the one set up."
     },
     "error": {
       "cannot_connect": "Failed to connect to Lekto.",
@@ -11,6 +12,16 @@
       "unsupported": "The server does not answer as Lekto 0.16 or newer does."
     },
     "step": {
+      "reauth_confirm": {
+        "data": {
+          "api_token": "API token"
+        },
+        "data_description": {
+          "api_token": "A new token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}; documents:read includes documents:count."
+        },
+        "description": "Lekto refuses the token, or it lacks rights. Enter a new one.",
+        "title": "New token for {name}"
+      },
       "user": {
         "data": {
           "api_token": "API token",
