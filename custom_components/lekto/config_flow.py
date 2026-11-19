@@ -39,6 +39,13 @@ USER_SCHEMA = probatio.Schema(
 )
 
 
+ADDRESS_SCHEMA = probatio.Schema(
+    {
+        probatio.Required(CONF_URL): TextSelector(TextSelectorConfig(type=TextSelectorType.URL)),
+        probatio.Required(CONF_VERIFY_SSL): bool,
+    }
+)
+
 TOKEN_SCHEMA = probatio.Schema(
     {
         probatio.Required(probatio.Secret(CONF_API_TOKEN)): TextSelector(
@@ -107,8 +114,34 @@ class LektoConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders=PLACEHOLDERS,
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Change the address or the TLS check; the token stays, the instance must too."""
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            user_input[CONF_URL] = user_input[CONF_URL].strip().rstrip("/")
+            me = await self._connect({**entry.data, **user_input})
+            if isinstance(me, str):
+                errors["base"] = me
+            else:
+                await self.async_set_unique_id(str(me.instance_id))
+                self._abort_if_unique_id_mismatch()
+                if not missing_rights(me.rights):
+                    return self.async_update_reload_and_abort(entry, data_updates=user_input)
+                errors["base"] = "missing_rights"
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                ADDRESS_SCHEMA, user_input or entry.data
+            ),
+            errors=errors,
+            description_placeholders={**PLACEHOLDERS, "name": entry.title},
+        )
+
     async def _connect(self, data: Mapping[str, Any]) -> Me | str:
-        """Shared by the user and reauth steps, so both map pylekto's errors to the same keys."""
+        """Shared by every step, so all map pylekto's errors to the same keys."""
         client = create_client(self.hass, data)
         try:
             me = await client.connect()

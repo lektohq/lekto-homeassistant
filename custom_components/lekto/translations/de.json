@@ -22,6 +22,18 @@
         "description": "Lekto lehnt das Token ab, oder ihm fehlen Rechte. Ein neues eintragen.",
         "title": "Neues Token für {name}"
       },
+      "reconfigure": {
+        "data": {
+          "url": "URL",
+          "verify_ssl": "SSL-Zertifikat überprüfen"
+        },
+        "data_description": {
+          "url": "Die Adresse der Weboberfläche von Lekto, etwa {example_url}.",
+          "verify_ssl": "Nur für ein selbst signiertes Zertifikat ausschalten."
+        },
+        "description": "Ändern, wo Home Assistant Lekto erreicht. Das Token bleibt; die Adresse muss zur selben Lekto-Instanz führen.",
+        "title": "Adresse von {name}"
+      },
       "user": {
         "data": {
           "api_token": "API-Token",
@@ -107,7 +119,7 @@
       "message": "Abruf der Zahlen von Lekto fehlgeschlagen: {error}"
     },
     "wrong_instance": {
-      "message": "Die Adresse führt zu einer anderen Lekto-Instanz als der eingerichteten."
+      "message": "Die Adresse führt zu einer anderen Lekto-Instanz als der eingerichteten. Den Eintrag mit der richtigen Adresse neu konfigurieren."
     }
   }
 }

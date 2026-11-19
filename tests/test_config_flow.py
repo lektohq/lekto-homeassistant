@@ -17,7 +17,7 @@ from pylekto.models import Problem
 
 from custom_components.lekto.const import DOMAIN
 
-from .const import ENTRY_DATA, INSTANCE_ID, NEW_TOKEN, TOKEN, URL, me
+from .const import ENTRY_DATA, INSTANCE_ID, NEW_TOKEN, NEW_URL, TOKEN, URL, me
 
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
@@ -213,6 +213,98 @@ async def test_reauth_other_instance(
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "unique_id_mismatch"
+    assert config_entry.data == ENTRY_DATA
+
+
+async def test_reconfigure(
+    hass: HomeAssistant, lekto_class: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """A new address of the same instance replaces the old one; the token stays."""
+    config_entry.add_to_hass(hass)
+    result = await config_entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    placeholders = result["description_placeholders"]
+    assert placeholders is not None
+    assert placeholders["name"] == "Lekto"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_URL: f"{NEW_URL}/", CONF_VERIFY_SSL: False}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert config_entry.data == ENTRY_DATA | {CONF_URL: NEW_URL, CONF_VERIFY_SSL: False}
+    assert len(hass.config_entries.async_entries(DOMAIN)) == 1
+    assert lekto_class.call_args.args == (NEW_URL, TOKEN)
+
+
+@pytest.mark.parametrize(
+    ("error", "base"),
+    [
+        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
+        (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
+        (LektoResponseError("no instance_id"), "unsupported"),
+        (LektoConnectionError("refused"), "cannot_connect"),
+        (RuntimeError("surprise"), "unknown"),
+    ],
+)
+async def test_reconfigure_error(
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    error: Exception,
+    base: str,
+) -> None:
+    """A failed check shows its error; the next try with a fixed cause saves the address."""
+    config_entry.add_to_hass(hass)
+    lekto.connect.side_effect = error
+    result = await config_entry.start_reconfigure_flow(hass)
+    new = {CONF_URL: NEW_URL, CONF_VERIFY_SSL: True}
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], new)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": base}
+
+    lekto.connect.side_effect = None
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], new)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+
+
+async def test_reconfigure_missing_rights(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """Behind the new address the token lacks rights: the old address stays."""
+    config_entry.add_to_hass(hass)
+    lekto.connect.return_value = me(rights=["documents:read"])
+    result = await config_entry.start_reconfigure_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_URL: NEW_URL, CONF_VERIFY_SSL: True}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "missing_rights"}
+    assert config_entry.data == ENTRY_DATA
+
+
+async def test_reconfigure_other_instance(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """An address of another instance is refused, and the old one stays."""
+    config_entry.add_to_hass(hass)
+    lekto.connect.return_value = me(instance_id="0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1dff")
+    result = await config_entry.start_reconfigure_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_URL: NEW_URL, CONF_VERIFY_SSL: True}
     )
 
     assert result["type"] is FlowResultType.ABORT
