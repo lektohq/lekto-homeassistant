@@ -30,3 +30,11 @@ Go to **Settings → Devices & services**, select **Add integration** and choose
 The integration connects to Lekto and checks the token's rights before it saves the entry. Each
 Lekto instance can be set up once; a second entry for the same instance is refused, whatever its
 token.
+
+## A new token
+
+When Lekto refuses the token (unknown, expired or revoked) or it lacks the rights above, for
+example because its user is no admin anymore, Home Assistant asks for a new one: it reports
+"Authentication expired for Lekto" under **Settings → System → Repairs**, and the entry under
+**Settings → Devices & services** offers to enter a new token. Make one as above and enter it
+there. It must come from the same Lekto instance; the address and the other settings stay.
