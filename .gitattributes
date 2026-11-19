@@ -1,2 +1,3 @@
 *     text eol=lf
 *.py  whitespace=error
+*.png binary

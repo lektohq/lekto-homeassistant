@@ -82,5 +82,9 @@ source = ["custom_components.lekto"]
 fail_under = 95
 show_missing = true
 
+[tool.typos.default.extend-words]
+# Home Assistant's name for its instance.
+hass = "hass"
+
 [tool.typos.files]
 extend-exclude = ["uv.lock"]
