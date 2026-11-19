@@ -34,7 +34,7 @@ class PinnedActionsTest(unittest.TestCase):
         unpinned = [
             f"{where}: {target}{rest}"
             for where, target, rest in uses()
-            if not target.startswith("./")  # an action of this repository
+            if not target.startswith("./")  # An action of this repository is not pinned.
             and not (PINNED.fullmatch(target) and VERSION.fullmatch(rest))
         ]
         self.assertEqual(unpinned, [])

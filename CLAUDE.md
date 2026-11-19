@@ -46,7 +46,7 @@ fails on a tag.
 ## Rules
 
 - The integration talks to Lekto only through pylekto; no HTTP of its own. `manifest.json` pins
-  pylekto exactly (`pylekto==0.1.0`), as Home Assistant requires; Renovate raises it.
+  pylekto exactly (`pylekto==0.2.0`), as Home Assistant requires; Renovate raises it.
 - Home Assistant comes with `pytest-homeassistant`, one package per Home Assistant release, which
   pins `homeassistant` exactly; Renovate raises it together with the image of hassfest.
 - The integration aims at the highest tier of Home Assistant's quality scale (Platinum);
@@ -61,7 +61,9 @@ fails on a tag.
 - This repository will be public: every value in code, tests, fixtures, commits and pull requests
   is made up. No real names, companies, IBANs, addresses, numbers, hosts or tokens.
 - Comments explain *why* (constraints, surprises, workarounds), never *what*; one short line or
-  none. No section or divider comments.
+  none; in code each a full sentence ending with a period (a label after a rule code in a
+  configuration file may stay short). No section or divider comments.
+- No `from __future__ import annotations`, as in Home Assistant's core.
 - Keep try clauses minimal: wrap only the statement that can raise, catch only the expected
   exceptions. An `@asynccontextmanager` always uses `try`/`finally`.
 - Docstrings: a one-line summary, Google-style `Args:` where it helps; private `_` symbols one or
