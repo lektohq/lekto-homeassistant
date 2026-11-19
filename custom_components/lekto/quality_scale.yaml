@@ -20,9 +20,7 @@ rules:
   docs-triggers:
     status: exempt
     comment: The integration provides no triggers.
-  entity-event-setup:
-    status: todo
-    comment: The event entity comes with point 11 of the plan.
+  entity-event-setup: done
   entity-unique-id: done
   has-entity-name: done
   runtime-data: done

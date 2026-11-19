@@ -9,7 +9,7 @@ newer. The repository is decided in `.knowledge/decisions/2026-11-19-homeassista
 
 | Path | Content |
 | --- | --- |
-| `custom_components/lekto/` | The integration: `manifest.json` (version `0.0.0`, set from the tag on release), `__init__.py` (setup), `config_flow.py`, `coordinator.py` (the numbers, every 60 s), `stream.py` (Lekto's events, connected again when lost), `entity.py` (the base entity and the device), `sensor.py`, `diagnostics.py`, `const.py`, `icons.json`, `translations/` (en, de), `quality_scale.yaml` (the state of every rule), `brand/` (the owl as icon) |
+| `custom_components/lekto/` | The integration: `manifest.json` (version `0.0.0`, set from the tag on release), `__init__.py` (setup), `config_flow.py`, `coordinator.py` (the numbers, every 60 s), `stream.py` (Lekto's events, connected again when lost), `entity.py` (the base entity and the device), `sensor.py`, `event.py` (the document event), `diagnostics.py`, `const.py`, `icons.json`, `translations/` (en, de), `quality_scale.yaml` (the state of every rule), `brand/` (the owl as icon) |
 | `docs/` | The user documentation, after the `docs-*` rules of the quality scale |
 | `hacs.json` | What the Marketplace reads: name, Home Assistant from 2026.11.0, a release as `lekto.zip` |
 | `tests/` | pytest with the fixtures of `pytest-homeassistant` (`hass`, `MockConfigEntry`, …); `tests/ruff.toml` adjusts the rules for tests |
