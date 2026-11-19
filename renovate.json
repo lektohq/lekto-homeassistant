@@ -1,0 +1,102 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "* 0-5 * * 1"
+  ],
+  "prConcurrentLimit": 5,
+  "minimumReleaseAge": "10 days",
+  "osvVulnerabilityAlerts": true,
+  "dependencyDashboardOSVVulnerabilitySummary": "unresolved",
+  "labels": [
+    "dependencies"
+  ],
+  "pre-commit": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Development dependencies: the dev group of pyproject.toml",
+      "matchDepTypes": [
+        "dependency-groups"
+      ],
+      "labels": [
+        "dev-deps"
+      ]
+    },
+    {
+      "description": "Home Assistant: the release the tests run against and the image of hassfest, together",
+      "matchPackageNames": [
+        "pytest-homeassistant",
+        "ghcr.io/home-assistant/hassfest"
+      ],
+      "groupName": "Home Assistant",
+      "labels": [
+        "dev-deps"
+      ]
+    },
+    {
+      "description": "The devcontainer: its Dockerfile, the hooks of prek and Claude Code",
+      "matchFileNames": [
+        ".devcontainer/**",
+        "Dockerfile.dev",
+        ".pre-commit-config.yaml"
+      ],
+      "labels": [
+        "dev-deps"
+      ]
+    },
+    {
+      "description": "The actions of the workflows, pinned to their commits",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "labels": [
+        "ci"
+      ]
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "* 0-5 1 * *"
+    ]
+  },
+  "customManagers": [
+    {
+      "description": "Claude Code in Dockerfile.dev: the version after the `# renovate:` comment",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile\\.dev$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\nARG [A-Z_]+_VERSION=(?<currentValue>\\S+)"
+      ]
+    },
+    {
+      "description": "The requirements of the integration in manifest.json: packages on PyPI, pinned with ==",
+      "customType": "regex",
+      "datasourceTemplate": "pypi",
+      "managerFilePatterns": [
+        "/(^|/)custom_components/lekto/manifest\\.json$/"
+      ],
+      "matchStrings": [
+        "\"(?<depName>[A-Za-z0-9._-]+)==(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "description": "The image of hassfest in ci.yml: the image after the `# renovate:` comment",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*[A-Z_]+: \\S+?:(?<currentValue>\\S+)"
+      ]
+    }
+  ]
+}

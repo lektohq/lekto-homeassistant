@@ -1,0 +1,39 @@
+name: Release
+
+# Publishing a release on GitHub sets the version from its tag in manifest.json and attaches the
+# integration as lekto.zip, which the Marketplace downloads (hacs.json: zip_release).
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  zip:
+    name: Attach lekto.zip
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set the version from the tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="${TAG,,}"
+          version="${version#v}"
+          manifest=custom_components/lekto/manifest.json
+          jq --arg version "$version" '.version = $version' "$manifest" > manifest.json.new
+          mv manifest.json.new "$manifest"
+          jq -e --arg version "$version" '.version == $version' "$manifest"
+      # The files of the integration at the top of the archive, as the Marketplace unpacks it.
+      - name: Pack the integration
+        working-directory: custom_components/lekto
+        run: zip -r "${GITHUB_WORKSPACE}/lekto.zip" . -x '*__pycache__*'
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" lekto.zip --repo "$GITHUB_REPOSITORY"
