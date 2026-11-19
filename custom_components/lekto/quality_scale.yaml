@@ -44,7 +44,7 @@ rules:
   reauthentication-flow: done
   test-coverage: done
   devices: done
-  diagnostics: todo
+  diagnostics: done
   discovery:
     status: exempt
     comment: Lekto does not announce itself on the network (no mDNS, no SSDP).

@@ -68,6 +68,8 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
         self.client = client
         self.instance_id = str(me.instance_id)
         self.lekto_version = me.lekto_version
+        self.api_version = me.api_version
+        self.rights = sorted(me.rights)
 
     @override
     async def _async_update_data(self) -> LektoData:
