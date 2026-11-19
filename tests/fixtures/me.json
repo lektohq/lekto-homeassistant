@@ -13,6 +13,7 @@
   "session_expires_at": null,
   "token_scope": null,
   "rights": [
+    "documents:count",
     "documents:read",
     "documents:upload",
     "webhooks:read",

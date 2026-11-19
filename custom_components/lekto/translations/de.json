@@ -1,7 +1,8 @@
 {
   "config": {
     "abort": {
-      "already_configured": "Diese Lekto-Instanz ist bereits eingerichtet."
+      "already_configured": "Diese Lekto-Instanz ist bereits eingerichtet.",
+      "unique_id_mismatch": "Unter dieser Adresse ist eine andere Lekto-Instanz als die eingerichtete."
     },
     "error": {
       "cannot_connect": "Verbindung zu Lekto fehlgeschlagen.",
@@ -11,6 +12,16 @@
       "unsupported": "Der Server antwortet nicht wie Lekto 0.16 oder neuer."
     },
     "step": {
+      "reauth_confirm": {
+        "data": {
+          "api_token": "API-Token"
+        },
+        "data_description": {
+          "api_token": "Ein neues Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}; documents:read schließt documents:count ein."
+        },
+        "description": "Lekto lehnt das Token ab, oder ihm fehlen Rechte. Ein neues eintragen.",
+        "title": "Neues Token für {name}"
+      },
       "user": {
         "data": {
           "api_token": "API-Token",

@@ -3,7 +3,11 @@
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL, Platform
-from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+    ConfigEntryError,
+    ConfigEntryNotReady,
+)
 from homeassistant.helpers.httpx_client import get_async_client
 from pylekto import (
     LektoAuthenticationError,
@@ -35,8 +39,7 @@ def create_client(hass: HomeAssistant, data: Mapping[str, Any]) -> LektoClient:
 
 def missing_rights(rights: Iterable[str]) -> list[str]:
     """Return the rights Home Assistant needs that ``rights`` lack, sorted."""
-    given = set(rights)
-    return sorted(right for right, holders in REQUIRED_RIGHTS.items() if given.isdisjoint(holders))
+    return sorted(REQUIRED_RIGHTS.difference(rights))
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> None:
@@ -44,12 +47,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
     client = create_client(hass, entry.data)
     try:
         me = await client.connect()
-    # Without a reauth flow yet, ConfigEntryAuthFailed would start one that does not exist.
     except LektoAuthenticationError as err:
-        raise ConfigEntryError(translation_domain=DOMAIN, translation_key="invalid_auth") from err
+        raise ConfigEntryAuthFailed(
+            translation_domain=DOMAIN, translation_key="invalid_auth"
+        ) from err
     # An upload token may not even ask who it is.
     except LektoForbiddenError as err:
-        raise ConfigEntryError(
+        raise ConfigEntryAuthFailed(
             translation_domain=DOMAIN,
             translation_key="missing_rights",
             translation_placeholders={"rights": ", ".join(sorted(REQUIRED_RIGHTS))},
@@ -63,7 +67,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
     if str(me.instance_id) != entry.unique_id:
         raise ConfigEntryError(translation_domain=DOMAIN, translation_key="wrong_instance")
     if missing := missing_rights(me.rights):
-        raise ConfigEntryError(
+        raise ConfigEntryAuthFailed(
             translation_domain=DOMAIN,
             translation_key="missing_rights",
             translation_placeholders={"rights": ", ".join(missing)},

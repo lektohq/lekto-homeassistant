@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 import pytest
-from homeassistant.config_entries import ConfigEntryState
+from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.loader import async_get_integration
 from pylekto import (
     LektoAuthenticationError,
@@ -120,3 +120,31 @@ async def test_setup_no_longer_fits(
         config_entry.error_reason_translation_key,
         config_entry.error_reason_translation_placeholders,
     ) == expected
+
+
+@pytest.mark.parametrize(
+    ("error", "answer"),
+    [
+        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), None),
+        (LektoForbiddenError(Problem(title="Forbidden", status=403)), None),
+        (None, me(rights=["documents:read"])),
+    ],
+)
+async def test_setup_starts_reauth(
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    error: Exception | None,
+    answer: Me | None,
+) -> None:
+    """A refused token, or one without the rights, asks for a new token."""
+    lekto.connect.side_effect = error
+    if answer is not None:
+        lekto.connect.return_value = answer
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert [flow["context"]["source"] for flow in flows] == [SOURCE_REAUTH]

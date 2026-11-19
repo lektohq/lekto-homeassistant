@@ -7,6 +7,7 @@ from pytest_homeassistant.common import load_json_object_fixture
 INSTANCE_ID = "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1d00"
 URL = "https://lekto.example.com"
 TOKEN = "lekto_madeupTokenForTests"
+NEW_TOKEN = "lekto_anotherMadeupToken"
 ENTRY_DATA = {CONF_URL: URL, CONF_API_TOKEN: TOKEN, CONF_VERIFY_SSL: True}
 
 
