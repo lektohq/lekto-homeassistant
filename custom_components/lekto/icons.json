@@ -1,5 +1,10 @@
 {
   "entity": {
+    "event": {
+      "document": {
+        "default": "mdi:file-document-outline"
+      }
+    },
     "sensor": {
       "classifier_confirmed_since": {
         "default": "mdi:school"

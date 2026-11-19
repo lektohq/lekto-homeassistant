@@ -1,5 +1,8 @@
 """Made-up values of the tests, and Lekto's answers read from the fixtures."""
 
+import asyncio
+from typing import TYPE_CHECKING
+
 from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL
 from pylekto.models import (
     ClassifierStatusOut,
@@ -12,6 +15,9 @@ from pylekto.models import (
     SearchStatusOut,
 )
 from pytest_homeassistant.common import load_json_object_fixture
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable
 
 INSTANCE_ID = "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1d00"
 DOCUMENT_ID = "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1e00"
@@ -68,3 +74,21 @@ def event(type_: str, **fields: object) -> EventMessage:
         }
         | fields
     )
+
+
+def streams(
+    *answers: list[EventMessage] | Exception,
+) -> Callable[..., AsyncIterator[EventMessage]]:
+    """Return what ``events.listen`` does on each call: events, then stay open; or raise."""
+    remaining = list(answers)
+
+    async def listen(**_filters: object) -> AsyncIterator[EventMessage]:
+        answer = remaining.pop(0) if remaining else []
+        if isinstance(answer, Exception):
+            raise answer
+        for message in answer:
+            yield message
+        if not remaining:
+            await asyncio.Event().wait()
+
+    return listen

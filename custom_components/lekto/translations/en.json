@@ -50,6 +50,30 @@
     }
   },
   "entity": {
+    "event": {
+      "document": {
+        "name": "Document",
+        "state_attributes": {
+          "document_id": {
+            "name": "Document ID"
+          },
+          "event_type": {
+            "state": {
+              "received": "Received",
+              "filed": "Filed",
+              "review_required": "Review required"
+            }
+          },
+          "lane": {
+            "name": "Lane",
+            "state": {
+              "yellow": "Review",
+              "red": "Action needed"
+            }
+          }
+        }
+      }
+    },
     "sensor": {
       "classifier_confirmed_since": {
         "name": "Confirmations since training"

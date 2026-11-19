@@ -1,6 +1,5 @@
 """The event stream: events pass on, the numbers follow, the stream comes back."""
 
-import asyncio
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
@@ -20,10 +19,9 @@ from custom_components.lekto.const import DOMAIN
 from custom_components.lekto.coordinator import LektoCoordinator
 from custom_components.lekto.stream import RETRY_FIRST, RETRY_LAST, signal
 
-from .const import event
+from .const import event, streams
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
     from unittest.mock import MagicMock
 
     from homeassistant.core import HomeAssistant
@@ -31,24 +29,6 @@ if TYPE_CHECKING:
     from pytest_homeassistant.common import MockConfigEntry
 
 pytestmark = pytest.mark.stream
-
-
-def streams(
-    *answers: list[EventMessage] | Exception,
-) -> Callable[..., AsyncIterator[EventMessage]]:
-    """Return what ``events.listen`` does on each call: events, then stay open; or raise."""
-    remaining = list(answers)
-
-    async def listen(**_filters: object) -> AsyncIterator[EventMessage]:
-        answer = remaining.pop(0) if remaining else []
-        if isinstance(answer, Exception):
-            raise answer
-        for message in answer:
-            yield message
-        if not remaining:
-            await asyncio.Event().wait()
-
-    return listen
 
 
 async def _set_up(hass: HomeAssistant, config_entry: MockConfigEntry) -> list[EventMessage]:

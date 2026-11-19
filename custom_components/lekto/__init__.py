@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
     from homeassistant.core import HomeAssistant
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.EVENT, Platform.SENSOR]
 
 
 def create_client(hass: HomeAssistant, data: Mapping[str, Any]) -> LektoClient:
