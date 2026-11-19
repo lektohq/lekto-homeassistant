@@ -1,0 +1,23 @@
+{
+  "kinds": [
+    {
+      "kind": "pipeline.node",
+      "running": 1,
+      "due": 4,
+      "planned": 0,
+      "failed": 2,
+      "done": 812
+    },
+    {
+      "kind": "search.index",
+      "running": 0,
+      "due": 3,
+      "planned": 1,
+      "failed": 1,
+      "done": 640
+    }
+  ],
+  "last_started_at": "2026-11-19T08:15:00Z",
+  "now": "2026-11-19T08:16:00Z",
+  "kept_since": "2026-11-12T08:16:00Z"
+}

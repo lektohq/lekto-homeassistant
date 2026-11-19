@@ -39,20 +39,34 @@
   },
   "entity": {
     "sensor": {
-      "inbox_open": {
-        "name": "Posteingang offen"
+      "classifier_confirmed_since": {
+        "name": "Bestätigungen seit dem Training"
       },
-      "inbox_new": {
-        "name": "Posteingang neu"
+      "documents": {
+        "name": "Dokumente"
       },
-      "inbox_review": {
-        "name": "Posteingang prüfen"
+      "health": {
+        "name": "Zustand",
+        "state": {
+          "ok": "OK",
+          "degraded": "Eingeschränkt",
+          "down": "Ausgefallen"
+        }
       },
       "inbox_intervene": {
         "name": "Posteingang eingreifen"
       },
+      "inbox_new": {
+        "name": "Posteingang neu"
+      },
+      "inbox_open": {
+        "name": "Posteingang offen"
+      },
       "inbox_processing": {
         "name": "Posteingang in Verarbeitung"
+      },
+      "inbox_review": {
+        "name": "Posteingang prüfen"
       },
       "inbox_worst_lane": {
         "name": "Posteingang schlimmste Spur",
@@ -62,8 +76,17 @@
           "red": "Eingreifen"
         }
       },
-      "documents": {
-        "name": "Dokumente"
+      "jobs_due": {
+        "name": "Jobs wartend"
+      },
+      "jobs_failed": {
+        "name": "Jobs fehlgeschlagen"
+      },
+      "search_queued": {
+        "name": "Suchindex wartend"
+      },
+      "worker_last_started": {
+        "name": "Letzter Start eines Workers"
       }
     }
   },

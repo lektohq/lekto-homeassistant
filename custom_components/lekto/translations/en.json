@@ -39,20 +39,34 @@
   },
   "entity": {
     "sensor": {
-      "inbox_open": {
-        "name": "Inbox open"
+      "classifier_confirmed_since": {
+        "name": "Confirmations since training"
       },
-      "inbox_new": {
-        "name": "Inbox new"
+      "documents": {
+        "name": "Documents"
       },
-      "inbox_review": {
-        "name": "Inbox review"
+      "health": {
+        "name": "Health",
+        "state": {
+          "ok": "OK",
+          "degraded": "Degraded",
+          "down": "Down"
+        }
       },
       "inbox_intervene": {
         "name": "Inbox action needed"
       },
+      "inbox_new": {
+        "name": "Inbox new"
+      },
+      "inbox_open": {
+        "name": "Inbox open"
+      },
       "inbox_processing": {
         "name": "Inbox processing"
+      },
+      "inbox_review": {
+        "name": "Inbox review"
       },
       "inbox_worst_lane": {
         "name": "Inbox worst lane",
@@ -62,8 +76,17 @@
           "red": "Action needed"
         }
       },
-      "documents": {
-        "name": "Documents"
+      "jobs_due": {
+        "name": "Jobs waiting"
+      },
+      "jobs_failed": {
+        "name": "Jobs failed"
+      },
+      "search_queued": {
+        "name": "Search index waiting"
+      },
+      "worker_last_started": {
+        "name": "Worker last started"
       }
     }
   },

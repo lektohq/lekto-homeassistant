@@ -1,0 +1,27 @@
+{
+  "model": {
+    "number": 2,
+    "trained_at": "2026-11-18T20:00:00Z",
+    "examples": 150,
+    "examples_until": "2026-11-18T19:55:00Z",
+    "classes": {
+      "contact": 12,
+      "document_type": 8,
+      "topic": 0,
+      "space": 0,
+      "tags": 0
+    },
+    "learned_identifiers": 4,
+    "accuracy": {
+      "tested": 30,
+      "contact": 0.7,
+      "document_type": 0.8
+    },
+    "method": "made-up-method/1"
+  },
+  "confirmed": 159,
+  "since": 9,
+  "min_examples": 20,
+  "retrain_after": 25,
+  "threshold": 0.8
+}

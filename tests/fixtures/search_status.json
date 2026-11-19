@@ -1,0 +1,23 @@
+{
+  "documents": 1234,
+  "index": {
+    "documents": 1230,
+    "embedded": 0,
+    "vectors": 0,
+    "indexing": true,
+    "size_bytes": 4096000
+  },
+  "running": 1,
+  "queued": 6,
+  "remaining_ms": 1500.0,
+  "embedded_jobs": null,
+  "plain_jobs": {
+    "count": 120,
+    "median_ms": 60.0,
+    "p90_ms": 80.0
+  },
+  "per_section_ms": null,
+  "model": null,
+  "dimensions": null,
+  "since": "2026-11-12T08:16:00Z"
+}

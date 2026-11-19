@@ -1,8 +1,18 @@
 {
   "entity": {
     "sensor": {
+      "classifier_confirmed_since": {
+        "default": "mdi:school"
+      },
       "documents": {
         "default": "mdi:file-document-multiple"
+      },
+      "health": {
+        "default": "mdi:heart-pulse",
+        "state": {
+          "degraded": "mdi:alert",
+          "down": "mdi:close-octagon"
+        }
       },
       "inbox_intervene": {
         "default": "mdi:alert-circle"
@@ -26,6 +36,18 @@
           "red": "mdi:alert-circle",
           "yellow": "mdi:eye-check"
         }
+      },
+      "jobs_due": {
+        "default": "mdi:timer-sand"
+      },
+      "jobs_failed": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "search_queued": {
+        "default": "mdi:database-search"
+      },
+      "worker_last_started": {
+        "default": "mdi:play-circle-outline"
       }
     }
   }

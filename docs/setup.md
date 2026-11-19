@@ -9,6 +9,7 @@ Home Assistant uses an API token of a Lekto admin, made for it alone. In Lekto, 
 | --- | --- |
 | `admin:count_all` | the numbers of the whole household, not only the admin's own documents |
 | `documents:count` or `documents:read` | the numbers; `documents:read` includes `documents:count` |
+| `system:read` | the state of Lekto's jobs, search index and classifier |
 
 The integration refuses a token without them. Lekto shows the token only once; copy it.
 

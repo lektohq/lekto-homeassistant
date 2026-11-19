@@ -5,12 +5,25 @@ from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
 import pytest
 from pylekto.resources.documents import DocumentsResource
+from pylekto.resources.health import HealthResource
 from pylekto.resources.inbox import InboxResource
+from pylekto.resources.operations import ClassifierResource, JobsResource
+from pylekto.resources.search import SearchResource
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.lekto.const import DOMAIN
 
-from .const import ENTRY_DATA, INSTANCE_ID, documents_count, inbox_summary, me
+from .const import (
+    ENTRY_DATA,
+    INSTANCE_ID,
+    classifier_status,
+    documents_count,
+    health,
+    inbox_summary,
+    jobs_summary,
+    me,
+    search_status,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -31,6 +44,14 @@ def lekto_class() -> Iterator[MagicMock]:
         client.inbox.summary.return_value = inbox_summary()
         client.documents = create_autospec(DocumentsResource, instance=True)
         client.documents.count.return_value = documents_count()
+        client.health = create_autospec(HealthResource, instance=True)
+        client.health.get.return_value = health()
+        client.jobs = create_autospec(JobsResource, instance=True)
+        client.jobs.summary.return_value = jobs_summary()
+        client.search = create_autospec(SearchResource, instance=True)
+        client.search.status.return_value = search_status()
+        client.classifier = create_autospec(ClassifierResource, instance=True)
+        client.classifier.status.return_value = classifier_status()
         yield client_class
 
 
