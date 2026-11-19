@@ -78,6 +78,7 @@ testpaths = ["tests"]
 addopts = "-p no:respx --cov --cov-report=term --cov-report=xml"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+markers = ["stream: run the event stream, which tests otherwise keep off"]
 pythonpath = ["."]
 
 [tool.coverage.run]

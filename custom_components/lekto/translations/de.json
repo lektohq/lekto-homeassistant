@@ -7,7 +7,7 @@
     "error": {
       "cannot_connect": "Verbindung zu Lekto fehlgeschlagen.",
       "invalid_auth": "Lekto nimmt das Token nicht an: Es ist unbekannt, abgelaufen oder widerrufen.",
-      "missing_rights": "Dem Token fehlen Rechte. Nötig sind {rights}; documents:read schließt documents:count ein.",
+      "missing_rights": "Dem Token fehlen Rechte. Nötig sind {rights}.",
       "unknown": "Unerwarteter Fehler.",
       "unsupported": "Der Server antwortet nicht wie Lekto 0.16 oder neuer."
     },
@@ -17,7 +17,7 @@
           "api_token": "API-Token"
         },
         "data_description": {
-          "api_token": "Ein neues Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}; documents:read schließt documents:count ein."
+          "api_token": "Ein neues Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}."
         },
         "description": "Lekto lehnt das Token ab, oder ihm fehlen Rechte. Ein neues eintragen.",
         "title": "Neues Token für {name}"
@@ -41,7 +41,7 @@
           "verify_ssl": "SSL-Zertifikat überprüfen"
         },
         "data_description": {
-          "api_token": "Ein Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}; documents:read schließt documents:count ein.",
+          "api_token": "Ein Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}.",
           "url": "Die Adresse der Weboberfläche von Lekto, etwa {example_url}.",
           "verify_ssl": "Nur für ein selbst signiertes Zertifikat ausschalten."
         },

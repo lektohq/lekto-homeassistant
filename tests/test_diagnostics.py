@@ -47,6 +47,7 @@ async def test_diagnostics(
         "api_version": "0.2",
         "rights": [
             "admin:count_all",
+            "admin:documents_all",
             "admin:mailboxes",
             "admin:private_webhooks",
             "documents:count",

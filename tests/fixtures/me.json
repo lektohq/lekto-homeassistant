@@ -14,6 +14,7 @@
   "token_scope": null,
   "rights": [
     "documents:count",
+    "admin:documents_all",
     "documents:read",
     "documents:upload",
     "webhooks:read",
