@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Run Home Assistant with the integration on port 8123: its configuration in config/, the
+# integration straight from custom_components/ (no copy, no symlink).
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Home Assistant imports custom_components as a namespace package; the repository's root joins it
+# to the one in config/.
+export PYTHONPATH="${PYTHONPATH:+${PYTHONPATH}:}${PWD}"
+
+exec uv run hass --config "${PWD}/config" --debug

@@ -1,0 +1,7 @@
+# The Home Assistant of script/develop; it writes everything else in config/, which git ignores.
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.lekto: debug
