@@ -2,7 +2,6 @@
 
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL, Platform
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers.httpx_client import get_async_client
@@ -15,15 +14,14 @@ from pylekto import (
 )
 
 from .const import DOMAIN, REQUIRED_RIGHTS
+from .coordinator import LektoConfigEntry, LektoCoordinator
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     from homeassistant.core import HomeAssistant
 
-PLATFORMS: list[Platform] = []
-
-type LektoConfigEntry = ConfigEntry[LektoClient]
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
 def create_client(hass: HomeAssistant, data: Mapping[str, Any]) -> LektoClient:
@@ -70,7 +68,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
             translation_key="missing_rights",
             translation_placeholders={"rights": ", ".join(missing)},
         )
-    entry.runtime_data = client
+    coordinator = LektoCoordinator(hass, entry, client, me)
+    await coordinator.async_config_entry_first_refresh()
+    entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
 

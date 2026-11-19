@@ -26,6 +26,36 @@
       }
     }
   },
+  "entity": {
+    "sensor": {
+      "inbox_open": {
+        "name": "Posteingang offen"
+      },
+      "inbox_new": {
+        "name": "Posteingang neu"
+      },
+      "inbox_review": {
+        "name": "Posteingang prüfen"
+      },
+      "inbox_intervene": {
+        "name": "Posteingang eingreifen"
+      },
+      "inbox_processing": {
+        "name": "Posteingang in Verarbeitung"
+      },
+      "inbox_worst_lane": {
+        "name": "Posteingang schlimmste Spur",
+        "state": {
+          "green": "Neu",
+          "yellow": "Prüfen",
+          "red": "Eingreifen"
+        }
+      },
+      "documents": {
+        "name": "Dokumente"
+      }
+    }
+  },
   "exceptions": {
     "cannot_connect": {
       "message": "Verbindung zu Lekto fehlgeschlagen."
@@ -38,6 +68,9 @@
     },
     "unsupported": {
       "message": "Der Server antwortet nicht wie Lekto 0.16 oder neuer."
+    },
+    "update_failed": {
+      "message": "Abruf der Zahlen von Lekto fehlgeschlagen: {error}"
     },
     "wrong_instance": {
       "message": "Die Adresse führt zu einer anderen Lekto-Instanz als der eingerichteten."

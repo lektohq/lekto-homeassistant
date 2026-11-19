@@ -2,13 +2,9 @@ rules:
   action-setup:
     status: todo
     comment: The actions come with point 13 of the plan.
-  appropriate-polling:
-    status: todo
-    comment: The coordinator comes with the sensors.
+  appropriate-polling: done
   brands: done
-  common-modules:
-    status: todo
-    comment: The coordinator and the base entity come with the sensors.
+  common-modules: done
   config-flow: done
   config-flow-test-coverage: done
   dependency-transparency: done
@@ -27,12 +23,8 @@ rules:
   entity-event-setup:
     status: todo
     comment: The event entity comes with point 11 of the plan.
-  entity-unique-id:
-    status: todo
-    comment: The entities come with the sensors.
-  has-entity-name:
-    status: todo
-    comment: The entities come with the sensors.
+  entity-unique-id: done
+  has-entity-name: done
   runtime-data: done
   test-before-configure: done
   test-before-setup: done
@@ -43,15 +35,17 @@ rules:
     status: exempt
     comment: The integration has no options flow.
   docs-installation-parameters: done
-  entity-unavailable: todo
+  entity-unavailable: done
   integration-owner: done
-  log-when-unavailable: todo
-  parallel-updates: todo
+  log-when-unavailable: done
+  parallel-updates: done
   reauthentication-flow:
     status: todo
-    comment: Until then a refused token fails the setup with ConfigEntryError.
+    comment: >-
+      Until then a refused token fails the setup with ConfigEntryError and makes the
+      sensors unavailable; then both raise ConfigEntryAuthFailed.
   test-coverage: done
-  devices: todo
+  devices: done
   diagnostics: todo
   discovery:
     status: exempt
@@ -72,9 +66,9 @@ rules:
   entity-category: todo
   entity-device-class: todo
   entity-disabled-by-default: todo
-  entity-translations: todo
+  entity-translations: done
   exception-translations: todo
-  icon-translations: todo
+  icon-translations: done
   reconfiguration-flow: todo
   repair-issues: todo
   stale-devices:
