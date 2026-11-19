@@ -3,7 +3,7 @@
 lekto-homeassistant is the Home Assistant integration (domain `lekto`) of Lekto DMS
 (`lektohq/lekto`), a custom integration installed through Home Assistant's Marketplace. It talks
 to Lekto only through pylekto (`lektohq/pylekto`). Python 3.14 only, Home Assistant 2026.11 or
-newer. The repository is decided in `.idea/decisions/2026-11-19-homeassistant-repo.md`.
+newer. The repository is decided in `.knowledge/decisions/2026-11-19-homeassistant-repo.md`.
 
 ## Layout
 
@@ -16,7 +16,7 @@ newer. The repository is decided in `.idea/decisions/2026-11-19-homeassistant-re
 | `script/` | `setup` (once: dependencies, Git hooks), `bootstrap` (every start of the devcontainer: dependencies), `develop` (Home Assistant with the integration on port 8123) |
 | `.devcontainer/`, `Dockerfile.dev` | Devcontainer: Python 3.14, uv, gh, Claude Code; the virtual environment lives in `/home/vscode/.local/dev-venv` |
 | `.github/` | Workflows (`ci.yml`, `release.yml`, Release Drafter, labels, stale, lock), labels, templates, `scripts/` (the test of the action pins) |
-| `.idea/` | The knowledge in German as small notes with frontmatter; start with `INDEX.md` and `README.md`. A checkout of the private repository `lektohq/lekto-knowledge`, shared with lekto and pylekto and ignored by this one (see "Working style") |
+| `.knowledge/` | The knowledge in German as small notes with frontmatter; start with `INDEX.md` and `README.md`. A checkout of the private repository `lektohq/lekto-knowledge`, shared with lekto and pylekto and ignored by this one (see "Working style") |
 
 ## Commands
 
@@ -52,7 +52,7 @@ fails on a tag.
 - The integration aims at the highest tier of Home Assistant's quality scale (Platinum);
   `quality_scale.yaml` holds the state of every rule.
 - Not in the Marketplace's catalog (`hacs/default`) and no `hacs/action` in CI until Tobi says so
-  (`.idea/open/homeassistant-default-catalog.md`); users add the repository themselves.
+  (`.knowledge/open/homeassistant-default-catalog.md`); users add the repository themselves.
 - Ruff (`select = ["ALL"]`) and mypy (`strict`) report nothing on new or changed code.
 - No suppressions (`# noqa`, `# type: ignore` and the like): fix the cause. Only `# noqa: F401` on
   a re-export in an `__init__.py` is allowed without asking.
@@ -84,20 +84,20 @@ sentence on what changes for them; it stands under the title in the release note
 ## Language
 
 Code, comments, commit messages and documentation (README, docstrings) are English. The notes in
-`.idea/` are German.
+`.knowledge/` are German.
 
 ## Working style
 
-- Plan first: read the notes in `.idea/` (`INDEX.md` first, area `homeassistant`), propose a plan,
-  wait for approval.
+- Plan first: read the notes in `.knowledge/` (`INDEX.md` first, area `homeassistant`), propose a
+  plan, wait for approval.
 - Decisions, plans, open points, working rules and history live only in the private repository
-  `lektohq/lekto-knowledge`, checked out at `.idea/` (after a fresh clone:
-  `git clone https://github.com/lektohq/lekto-knowledge.git .idea`). lekto and pylekto have their
-  own checkouts of it: `git pull` before working, and commit and push every change straight to its
-  `main` (`uv run tools/index.py` checks the notes and writes the index); nothing stays only
+  `lektohq/lekto-knowledge`, checked out at `.knowledge/` (after a fresh clone:
+  `git clone https://github.com/lektohq/lekto-knowledge.git .knowledge`). lekto and pylekto have
+  their own checkouts of it: `git pull` before working, and commit and push every change straight to
+  its `main` (`uv run tools/index.py` checks the notes and writes the index); nothing stays only
   local, and none of it goes into this repository. Notes about this integration carry the area
   `homeassistant` and their `code:` paths the prefix `lekto-homeassistant/`. Docstrings point at
-  notes as `.idea/<folder>/<name>.md`.
+  notes as `.knowledge/<folder>/<name>.md`.
 - If something is unclear or a decision is missing, ask before implementing. Do not deviate from
-  the decisions in `.idea/decisions/` on your own.
+  the decisions in `.knowledge/decisions/` on your own.
 - Small, thematically separate commits. Keep answers short and precise.
