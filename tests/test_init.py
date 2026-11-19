@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
+from homeassistant.const import CONF_URL, CONF_VERIFY_SSL
 from homeassistant.loader import async_get_integration
 from pylekto import (
     LektoAuthenticationError,
@@ -15,7 +16,7 @@ from pylekto.models import Problem
 
 from custom_components.lekto.const import DOMAIN
 
-from .const import me
+from .const import NEW_URL, TOKEN, me
 
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
@@ -151,3 +152,27 @@ async def test_setup_starts_reauth(
 
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert [flow["context"]["source"] for flow in flows] == [SOURCE_REAUTH]
+
+
+async def test_reconfigure_repairs_wrong_instance(
+    hass: HomeAssistant, lekto_class: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """An entry whose address leads to another instance sets up after reconfiguring it."""
+    lekto = lekto_class.return_value
+    lekto.connect.return_value = me(instance_id="0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1dff")
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    assert config_entry.state is ConfigEntryState.SETUP_ERROR
+
+    lekto.connect.return_value = me()
+    result = await config_entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_URL: NEW_URL, CONF_VERIFY_SSL: True}
+    )
+    await hass.async_block_till_done()
+
+    assert result["reason"] == "reconfigure_successful"
+    reloaded = hass.config_entries.async_get_entry(config_entry.entry_id)
+    assert reloaded is not None
+    assert reloaded.state is ConfigEntryState.LOADED
+    assert lekto_class.call_args.args == (NEW_URL, TOKEN)
