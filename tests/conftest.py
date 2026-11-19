@@ -1,10 +1,12 @@
 """Fixtures of the integration's tests: Lekto's answers from files instead of a Lekto."""
 
+import asyncio
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
 import pytest
 from pylekto.resources.documents import DocumentsResource
+from pylekto.resources.events import EventsResource
 from pylekto.resources.health import HealthResource
 from pylekto.resources.inbox import InboxResource
 from pylekto.resources.operations import ClassifierResource, JobsResource
@@ -18,6 +20,7 @@ from .const import (
     INSTANCE_ID,
     classifier_status,
     documents_count,
+    event,
     health,
     inbox_summary,
     jobs_summary,
@@ -26,12 +29,31 @@ from .const import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import AsyncIterator, Iterator
+
+    from pylekto.models import EventMessage
 
 
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Let Home Assistant load the integration from custom_components."""
+
+
+@pytest.fixture(autouse=True)
+def no_stream(request: pytest.FixtureRequest) -> Iterator[None]:
+    """Keep the event stream off, as tests wait for background tasks; ``stream`` marks its own."""
+    if request.node.get_closest_marker("stream"):
+        yield
+        return
+    with patch("custom_components.lekto.listen", AsyncMock(return_value=None)):
+        yield
+
+
+async def quiet_stream(**_filters: object) -> AsyncIterator[EventMessage]:
+    """Stand for an event stream that stays open without an event."""
+    await asyncio.Event().wait()
+    # Never reached; the yield makes this an async generator, as listen() is.
+    yield event("document.received")
 
 
 @pytest.fixture
@@ -52,6 +74,8 @@ def lekto_class() -> Iterator[MagicMock]:
         client.search.status.return_value = search_status()
         client.classifier = create_autospec(ClassifierResource, instance=True)
         client.classifier.status.return_value = classifier_status()
+        client.events = create_autospec(EventsResource, instance=True)
+        client.events.listen.side_effect = quiet_stream
         yield client_class
 
 

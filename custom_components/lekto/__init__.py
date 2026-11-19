@@ -19,6 +19,7 @@ from pylekto import (
 
 from .const import DOMAIN, REQUIRED_RIGHTS
 from .coordinator import LektoConfigEntry, LektoCoordinator
+from .stream import listen
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -76,6 +77,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_create_background_task(hass, listen(hass, entry), f"{DOMAIN} event stream")
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> None:

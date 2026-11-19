@@ -7,16 +7,18 @@ Home Assistant uses an API token of a Lekto admin, made for it alone. In Lekto, 
 
 | Right | Why |
 | --- | --- |
+| `documents:read` | the numbers, and the events of documents as they happen |
 | `admin:count_all` | the numbers of the whole household, not only the admin's own documents |
-| `documents:count` or `documents:read` | the numbers; `documents:read` includes `documents:count` |
+| `admin:documents_all` | the events of every user's documents, not only the admin's own; it lets the token read every document |
 | `system:read` | the state of Lekto's jobs, search index and classifier |
 
 The integration refuses a token without them. Lekto shows the token only once; copy it.
 
 [Lekto's documentation of API tokens](https://github.com/lektohq/lekto/blob/main/docs/api-tokens.md)
-lists the rights of a token for everything the integration will do: `documents:read`,
-`documents:upload`, `webhooks:read`, `webhooks:write`, `system:read`, `system:write`,
-`admin:count_all`, `admin:mailboxes`, `admin:private_webhooks`.
+lists the rights of a token for Home Assistant: `documents:read`, `documents:upload`,
+`webhooks:read`, `webhooks:write`, `system:read`, `system:write`, `admin:count_all`,
+`admin:mailboxes`, `admin:private_webhooks`. The integration also needs `admin:documents_all`,
+which that list does not name.
 
 ## Adding the integration
 

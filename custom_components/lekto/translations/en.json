@@ -7,7 +7,7 @@
     "error": {
       "cannot_connect": "Failed to connect to Lekto.",
       "invalid_auth": "Lekto does not accept the token: it is unknown, expired or revoked.",
-      "missing_rights": "The token lacks rights. It needs {rights}; documents:read includes documents:count.",
+      "missing_rights": "The token lacks rights. It needs {rights}.",
       "unknown": "Unexpected error.",
       "unsupported": "The server does not answer as Lekto 0.16 or newer does."
     },
@@ -17,7 +17,7 @@
           "api_token": "API token"
         },
         "data_description": {
-          "api_token": "A new token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}; documents:read includes documents:count."
+          "api_token": "A new token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}."
         },
         "description": "Lekto refuses the token, or it lacks rights. Enter a new one.",
         "title": "New token for {name}"
@@ -41,7 +41,7 @@
           "verify_ssl": "Verify SSL certificate"
         },
         "data_description": {
-          "api_token": "A token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}; documents:read includes documents:count.",
+          "api_token": "A token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}.",
           "url": "The address of Lekto's web interface, such as {example_url}.",
           "verify_ssl": "Turn off only for a self-signed certificate."
         },

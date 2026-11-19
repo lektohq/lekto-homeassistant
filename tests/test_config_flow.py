@@ -91,9 +91,10 @@ async def test_user_error(
 @pytest.mark.parametrize(
     "rights",
     [
-        ["documents:count", "documents:read", "system:read"],
-        ["admin:count_all", "documents:count", "documents:read"],
-        ["admin:count_all", "documents:upload", "system:read"],
+        ["admin:documents_all", "documents:read", "system:read"],
+        ["admin:count_all", "documents:read", "system:read"],
+        ["admin:count_all", "admin:documents_all", "documents:count", "system:read"],
+        ["admin:count_all", "admin:documents_all", "documents:read"],
     ],
 )
 async def test_user_missing_rights(
@@ -109,7 +110,10 @@ async def test_user_missing_rights(
     assert result["errors"] == {"base": "missing_rights"}
     placeholders = result["description_placeholders"]
     assert placeholders is not None
-    assert placeholders["rights"] == "admin:count_all, documents:count, system:read"
+    assert (
+        placeholders["rights"]
+        == "admin:count_all, admin:documents_all, documents:read, system:read"
+    )
 
 
 async def test_user_already_configured(

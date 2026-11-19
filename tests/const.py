@@ -4,6 +4,7 @@ from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL
 from pylekto.models import (
     ClassifierStatusOut,
     DocumentCountOut,
+    EventMessage,
     Health,
     InboxSummaryOut,
     JobsSummaryOut,
@@ -13,6 +14,7 @@ from pylekto.models import (
 from pytest_homeassistant.common import load_json_object_fixture
 
 INSTANCE_ID = "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1d00"
+DOCUMENT_ID = "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1e00"
 URL = "https://lekto.example.com"
 NEW_URL = "https://documents.example.com"
 TOKEN = "lekto_madeupTokenForTests"
@@ -53,3 +55,16 @@ def search_status() -> SearchStatusOut:
 def classifier_status() -> ClassifierStatusOut:
     """Return Lekto's answer to ``GET /classifier`` from the fixture."""
     return ClassifierStatusOut.model_validate(load_json_object_fixture("classifier_status.json"))
+
+
+def event(type_: str, **fields: object) -> EventMessage:
+    """Return an event of Lekto's stream with made-up ids."""
+    return EventMessage.model_validate(
+        {
+            "type": type_,
+            "id": "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1e01",
+            "occurred_at": "2026-11-19T08:20:00Z",
+            "document_id": DOCUMENT_ID,
+        }
+        | fields
+    )
