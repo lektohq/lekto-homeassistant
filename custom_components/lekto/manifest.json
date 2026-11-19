@@ -5,6 +5,7 @@
   "documentation": "https://github.com/lektohq/lekto-homeassistant",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/lektohq/lekto-homeassistant/issues",
-  "requirements": [],
+  "loggers": ["pylekto"],
+  "requirements": ["pylekto==0.2.0"],
   "version": "0.0.0"
 }
