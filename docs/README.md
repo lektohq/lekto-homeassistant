@@ -11,4 +11,5 @@ One entry sets up one Lekto instance, with an API token made for Home Assistant.
 - [Installation](installation.md)
 - [Setup](setup.md): the token and its rights, the parameters
 - [Sensors](sensors.md): what they count
+- [Diagnostics](diagnostics.md): what the file for a problem report holds
 - [Removal](removal.md)
