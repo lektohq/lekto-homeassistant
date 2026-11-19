@@ -1,0 +1,46 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Diese Lekto-Instanz ist bereits eingerichtet."
+    },
+    "error": {
+      "cannot_connect": "Verbindung zu Lekto fehlgeschlagen.",
+      "invalid_auth": "Lekto nimmt das Token nicht an: Es ist unbekannt, abgelaufen oder widerrufen.",
+      "missing_rights": "Dem Token fehlen Rechte. Nötig sind {rights}; documents:read schließt documents:count ein.",
+      "unknown": "Unerwarteter Fehler.",
+      "unsupported": "Der Server antwortet nicht wie Lekto 0.16 oder neuer."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "api_token": "API-Token",
+          "url": "URL",
+          "verify_ssl": "SSL-Zertifikat überprüfen"
+        },
+        "data_description": {
+          "api_token": "Ein Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}; documents:read schließt documents:count ein.",
+          "url": "Die Adresse der Weboberfläche von Lekto, etwa {example_url}.",
+          "verify_ssl": "Nur für ein selbst signiertes Zertifikat ausschalten."
+        },
+        "description": "Home Assistant mit einer Lekto-Instanz verbinden."
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Verbindung zu Lekto fehlgeschlagen."
+    },
+    "invalid_auth": {
+      "message": "Lekto nimmt das Token nicht an: Es ist unbekannt, abgelaufen oder widerrufen."
+    },
+    "missing_rights": {
+      "message": "Dem Token fehlen Rechte: {rights}."
+    },
+    "unsupported": {
+      "message": "Der Server antwortet nicht wie Lekto 0.16 oder neuer."
+    },
+    "wrong_instance": {
+      "message": "Die Adresse führt zu einer anderen Lekto-Instanz als der eingerichteten."
+    }
+  }
+}

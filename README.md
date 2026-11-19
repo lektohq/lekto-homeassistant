@@ -5,27 +5,10 @@ A [Home Assistant](https://www.home-assistant.io/) integration for the
 [pylekto](https://github.com/lektohq/pylekto).
 
 > [!NOTE]
-> The integration is being built: it installs and loads, but does nothing yet.
+> The integration is being built: it sets up a Lekto instance, but has no entities yet.
 
-## Requirements
-
-- Home Assistant 2026.11 or newer
-- A Lekto instance Home Assistant reaches, and a personal API token from it
-
-## Installation
-
-The integration is not in the Marketplace's catalog yet; add this repository to it yourself
-(the Marketplace asks you to connect GitHub for that):
-
-1. In Home Assistant, go to **Settings → Marketplace** and select **Add from link**.
-2. Under **GitHub link**, enter `lektohq/lekto-homeassistant`, select the type **Integration** if
-   asked, and select **Add**.
-3. Open **Lekto** in the list and select **Install**.
-
-## Removal
-
-Open **Lekto** in the Marketplace and select **Uninstall** from its menu (⋮). While the
-integration is still set up, the Marketplace offers **Delete and uninstall**.
+The documentation is in [`docs/`](docs/README.md): [installation](docs/installation.md),
+[setup](docs/setup.md), [removal](docs/removal.md).
 
 ## Development
 

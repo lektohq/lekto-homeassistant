@@ -1,0 +1,46 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This Lekto instance is already set up."
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Lekto.",
+      "invalid_auth": "Lekto does not accept the token: it is unknown, expired or revoked.",
+      "missing_rights": "The token lacks rights. It needs {rights}; documents:read includes documents:count.",
+      "unknown": "Unexpected error.",
+      "unsupported": "The server does not answer as Lekto 0.16 or newer does."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "api_token": "API token",
+          "url": "URL",
+          "verify_ssl": "Verify SSL certificate"
+        },
+        "data_description": {
+          "api_token": "A token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}; documents:read includes documents:count.",
+          "url": "The address of Lekto's web interface, such as {example_url}.",
+          "verify_ssl": "Turn off only for a self-signed certificate."
+        },
+        "description": "Connect Home Assistant to your Lekto instance."
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Failed to connect to Lekto."
+    },
+    "invalid_auth": {
+      "message": "Lekto does not accept the token: it is unknown, expired or revoked."
+    },
+    "missing_rights": {
+      "message": "The token lacks rights: {rights}."
+    },
+    "unsupported": {
+      "message": "The server does not answer as Lekto 0.16 or newer does."
+    },
+    "wrong_instance": {
+      "message": "The address leads to another Lekto instance than the one set up."
+    }
+  }
+}

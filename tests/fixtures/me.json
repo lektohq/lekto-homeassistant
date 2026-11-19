@@ -1,0 +1,33 @@
+{
+  "user": {
+    "id": "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1d01",
+    "username": "homeassistant",
+    "display_name": "Home Assistant",
+    "personal_space_id": "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1d02",
+    "role": "admin",
+    "active": true,
+    "created_at": "2026-11-01T08:00:00Z"
+  },
+  "authenticated_with": "token",
+  "csrf_token": null,
+  "session_expires_at": null,
+  "token_scope": null,
+  "rights": [
+    "documents:read",
+    "documents:upload",
+    "webhooks:read",
+    "webhooks:write",
+    "system:read",
+    "system:write",
+    "admin:count_all",
+    "admin:mailboxes",
+    "admin:private_webhooks"
+  ],
+  "has_password": true,
+  "totp_enabled": false,
+  "linked_accounts": [],
+  "lekto_version": "0.16.0",
+  "api_version": "0.2",
+  "instance_id": "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1d00",
+  "shortcut_url": null
+}
