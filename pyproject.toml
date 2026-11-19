@@ -67,6 +67,11 @@ files = ["custom_components", "tests"]
 # custom_components is a namespace package, as Home Assistant loads it.
 explicit_package_bases = true
 
+[[tool.mypy.overrides]]
+# pytest-homeassistant is typed but ships no py.typed marker.
+module = ["pytest_homeassistant.*"]
+follow_untyped_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # respx's own plugin would import httpx before Home Assistant aliases it to httpx2.
@@ -88,4 +93,5 @@ show_missing = true
 hass = "hass"
 
 [tool.typos.files]
-extend-exclude = ["uv.lock"]
+# The German translation is no English to check.
+extend-exclude = ["uv.lock", "custom_components/lekto/translations/de.json"]
