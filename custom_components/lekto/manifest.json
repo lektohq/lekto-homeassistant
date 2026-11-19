@@ -1,0 +1,10 @@
+{
+  "domain": "lekto",
+  "name": "Lekto",
+  "codeowners": ["@tb1337"],
+  "documentation": "https://github.com/lektohq/lekto-homeassistant",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/lektohq/lekto-homeassistant/issues",
+  "requirements": [],
+  "version": "0.0.0"
+}
