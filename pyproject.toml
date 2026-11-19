@@ -1,0 +1,86 @@
+[project]
+name = "lekto-homeassistant"
+# Set from the release's tag in custom_components/lekto/manifest.json when it is published
+# (.github/workflows/release.yml); the project itself is no package.
+version = "0.0.0"
+description = "Home Assistant integration for Lekto DMS"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.14.2"
+# Home Assistant installs what manifest.json requires; nothing runs from this project.
+dependencies = []
+
+[project.urls]
+"Source Code" = "https://github.com/lektohq/lekto-homeassistant"
+"Bug Reports" = "https://github.com/lektohq/lekto-homeassistant/issues"
+
+[dependency-groups]
+dev = [
+    "covdefaults>=2.3.0",
+    "mypy>=2.4.1",
+    "prek>=0.5.9",
+    "pytest-cov>=7.1.0",
+    # Home Assistant with the fixtures of its own tests, pinned to one release of it.
+    "pytest-homeassistant>=2026.11.0",
+    "ruff>=0.17.3",
+    "typos>=1.51.1",
+    "yamllint>=1.38.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN401", # Any is sometimes the honest type of a value
+    "CPY001", # no copyright notice in every file
+    "D203",   # conflicts with D211
+    "D213",   # conflicts with D212
+    "D417",   # false positives
+    "PLR2004", # magic values in comparisons
+    "RUF012", # mutable class attributes without ClassVar
+    # Conflict with the Ruff formatter.
+    "COM812",
+    "ISC001",
+]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 25
+
+[tool.mypy]
+strict = true
+files = ["custom_components", "tests"]
+# custom_components is a namespace package, as Home Assistant loads it.
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# respx's own plugin would import httpx before Home Assistant aliases it to httpx2.
+addopts = "-p no:respx --cov --cov-report=term --cov-report=xml"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["."]
+
+[tool.coverage.run]
+plugins = ["covdefaults"]
+source = ["custom_components.lekto"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+
+[tool.typos.files]
+extend-exclude = ["uv.lock"]

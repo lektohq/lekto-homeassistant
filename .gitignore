@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# Tests and coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Tools
+.mypy_cache/
+.ruff_cache/
+
+# Editors
+.vscode/
+*.iml
+
+# The knowledge vault, a checkout of the private repository lektohq/lekto-knowledge
+.idea/
+
+# The Home Assistant of script/develop: everything it writes, except its configuration
+config/*
+!config/configuration.yaml
+
+# Local settings and secrets
+.env*
+!.env.example
+
+# macOS
+.DS_Store
+._*
+
+# Claude Code
+.claude/settings.local.json
