@@ -26,6 +26,36 @@
       }
     }
   },
+  "entity": {
+    "sensor": {
+      "inbox_open": {
+        "name": "Inbox open"
+      },
+      "inbox_new": {
+        "name": "Inbox new"
+      },
+      "inbox_review": {
+        "name": "Inbox review"
+      },
+      "inbox_intervene": {
+        "name": "Inbox action needed"
+      },
+      "inbox_processing": {
+        "name": "Inbox processing"
+      },
+      "inbox_worst_lane": {
+        "name": "Inbox worst lane",
+        "state": {
+          "green": "New",
+          "yellow": "Review",
+          "red": "Action needed"
+        }
+      },
+      "documents": {
+        "name": "Documents"
+      }
+    }
+  },
   "exceptions": {
     "cannot_connect": {
       "message": "Failed to connect to Lekto."
@@ -38,6 +68,9 @@
     },
     "unsupported": {
       "message": "The server does not answer as Lekto 0.16 or newer does."
+    },
+    "update_failed": {
+      "message": "Failed to fetch the numbers from Lekto: {error}"
     },
     "wrong_instance": {
       "message": "The address leads to another Lekto instance than the one set up."

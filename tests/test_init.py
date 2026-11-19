@@ -37,12 +37,12 @@ async def test_integration(hass: HomeAssistant) -> None:
 async def test_setup_and_unload(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
-    """The entry connects, keeps the client and unloads again."""
+    """The entry connects, keeps the client in its coordinator and unloads again."""
     config_entry.add_to_hass(hass)
 
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     assert config_entry.state is ConfigEntryState.LOADED
-    assert config_entry.runtime_data is lekto
+    assert config_entry.runtime_data.client is lekto
 
     assert await hass.config_entries.async_unload(config_entry.entry_id)
     unloaded = hass.config_entries.async_get_entry(config_entry.entry_id)

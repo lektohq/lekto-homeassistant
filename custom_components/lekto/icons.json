@@ -1,0 +1,32 @@
+{
+  "entity": {
+    "sensor": {
+      "documents": {
+        "default": "mdi:file-document-multiple"
+      },
+      "inbox_intervene": {
+        "default": "mdi:alert-circle"
+      },
+      "inbox_new": {
+        "default": "mdi:email-newsletter"
+      },
+      "inbox_open": {
+        "default": "mdi:inbox"
+      },
+      "inbox_processing": {
+        "default": "mdi:cog-sync"
+      },
+      "inbox_review": {
+        "default": "mdi:eye-check"
+      },
+      "inbox_worst_lane": {
+        "default": "mdi:traffic-light",
+        "state": {
+          "green": "mdi:email-newsletter",
+          "red": "mdi:alert-circle",
+          "yellow": "mdi:eye-check"
+        }
+      }
+    }
+  }
+}

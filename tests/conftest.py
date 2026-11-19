@@ -1,14 +1,16 @@
 """Fixtures of the integration's tests: Lekto's answers from files instead of a Lekto."""
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
 import pytest
+from pylekto.resources.documents import DocumentsResource
+from pylekto.resources.inbox import InboxResource
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.lekto.const import DOMAIN
 
-from .const import ENTRY_DATA, INSTANCE_ID, me
+from .const import ENTRY_DATA, INSTANCE_ID, documents_count, inbox_summary, me
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -23,7 +25,12 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
 def lekto_class() -> Iterator[MagicMock]:
     """Replace pylekto's client class with one whose clients answer from the fixtures."""
     with patch("custom_components.lekto.LektoClient", autospec=True) as client_class:
-        client_class.return_value.connect.return_value = me()
+        client = client_class.return_value
+        client.connect.return_value = me()
+        client.inbox = create_autospec(InboxResource, instance=True)
+        client.inbox.summary.return_value = inbox_summary()
+        client.documents = create_autospec(DocumentsResource, instance=True)
+        client.documents.count.return_value = documents_count()
         yield client_class
 
 
