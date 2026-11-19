@@ -39,3 +39,10 @@ example because its user is no admin anymore, Home Assistant asks for a new one:
 "Authentication expired for Lekto" under **Settings → System → Repairs**, and the entry under
 **Settings → Devices & services** offers to enter a new token. Make one as above and enter it
 there. It must come from the same Lekto instance; the address and the other settings stay.
+
+## A new address
+
+When Lekto moves to another address, or its certificate changes, open **Lekto** under
+**Settings → Devices & services** and select **Reconfigure** from the entry's menu (⋮). Enter
+the new URL and whether to verify the certificate; the token stays. The address must lead to the
+same Lekto instance, and the token must still have the rights above there.
