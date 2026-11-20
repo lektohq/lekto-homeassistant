@@ -200,8 +200,8 @@
         },
         "step": {
           "init": {
-            "title": "Lekto ({name}): diagnostic sensors off",
-            "description": "Lekto's token no longer has the right {rights}, so the sensors of Lekto's jobs, search index and classifier are off. Enter a new token that has the rights, or remove the entities that are gone with them.",
+            "title": "Lekto ({name}): diagnostic entities off",
+            "description": "Lekto's token no longer has the right {rights}, so the sensors of Lekto's jobs, search index and classifier and the update entity are off. Enter a new token that has the rights, or remove the entities that are gone with them.",
             "menu_options": {
               "new_token": "Enter a new token",
               "remove_entities": "Remove the entities"
@@ -213,7 +213,7 @@
           }
         }
       },
-      "title": "Lekto ({name}): diagnostic sensors off"
+      "title": "Lekto ({name}): diagnostic entities off"
     },
     "events_lost": {
       "fix_flow": {

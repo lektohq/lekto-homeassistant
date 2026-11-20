@@ -15,7 +15,7 @@ reads the token's rights when it sets up and offers what they allow.
 
 | Optional right | What it opens |
 | --- | --- |
-| `system:read` | the diagnostic sensors: jobs, search index, classifier |
+| `system:read` | the diagnostic sensors (jobs, search index, classifier) and the [update entity](sensors.md#update) |
 | `documents:read` and `admin:documents_all` | Lekto's events: the document event, and the numbers updated as soon as something changes; `admin:documents_all` lets the token read every document of the household; and the action that lists documents |
 | `master_data:read` | the names of contacts, document types and tags: in the document event's fields, and the actions' filters and listed fields |
 | `spaces:read` (with `admin:documents_all`) | the names of spaces: in the document event's fields, the space of an upload, and the actions' filters and listed fields |
@@ -53,7 +53,7 @@ settings stay.
 
 When the token loses an optional right, the integration sets itself up again without what that
 right opened, and reports it under **Settings → System → Repairs**, for example "Lekto:
-diagnostic sensors off". The repair offers two ways out:
+diagnostic entities off". The repair offers two ways out:
 
 - **Enter a new token** that has the right again; the entities come back.
 - **Remove the entities** that the right opened. The repair does not come back; a later token

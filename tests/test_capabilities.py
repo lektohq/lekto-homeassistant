@@ -38,6 +38,7 @@ DIAGNOSTIC_SENSORS = [
     "sensor.lekto_jobs_failed",
     "sensor.lekto_jobs_waiting",
     "sensor.lekto_search_index_waiting",
+    "update.lekto",
 ]
 FORBIDDEN = LektoForbiddenError(Problem(title="Forbidden", status=403))
 
@@ -304,7 +305,7 @@ async def test_stream_refused_after_lost_right(hass: HomeAssistant, lekto: Magic
 def test_entity_keys() -> None:
     """The repair removes exactly the entities each capability brings."""
     sensors = {d.key for d in SENSORS if d.capability is Capability.DIAGNOSTICS}
-    assert sensors == ENTITY_KEYS[Capability.DIAGNOSTICS]
+    assert sensors | {"update"} == ENTITY_KEYS[Capability.DIAGNOSTICS]
     assert ENTITY_KEYS[Capability.EVENTS] == {"document"}
 
 

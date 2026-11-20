@@ -45,6 +45,7 @@ ENTITY_KEYS: Final[dict[Capability, frozenset[str]]] = {
             "worker_last_started",
             "search_queued",
             "classifier_confirmed_since",
+            "update",
         }
     ),
     Capability.EVENTS: frozenset({"document"}),

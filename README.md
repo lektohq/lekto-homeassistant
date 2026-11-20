@@ -5,11 +5,12 @@ A [Home Assistant](https://www.home-assistant.io/) integration for the
 [pylekto](https://github.com/lektohq/pylekto).
 
 > [!NOTE]
-> The integration is being built: it reports the numbers of the household's documents; more is
-> to come.
+> The integration is in beta: it reports the numbers of the household's documents, reacts to new
+> documents, starts actions in Lekto and tells when a new release of Lekto is out.
 
 The documentation is in [`docs/`](docs/README.md): [installation](docs/installation.md),
-[setup](docs/setup.md), [sensors](docs/sensors.md), [removal](docs/removal.md).
+[setup](docs/setup.md), [sensors and update](docs/sensors.md), [document event](docs/events.md),
+[actions](docs/actions.md), [diagnostics](docs/diagnostics.md), [removal](docs/removal.md).
 
 ## Development
 
