@@ -57,8 +57,14 @@
     }
   },
   "services": {
+    "count": {
+      "service": "mdi:counter"
+    },
     "fetch_mail": {
       "service": "mdi:email-sync"
+    },
+    "list_documents": {
+      "service": "mdi:format-list-bulleted"
     },
     "upload": {
       "service": "mdi:file-upload"

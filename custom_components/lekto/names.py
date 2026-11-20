@@ -137,3 +137,11 @@ class LektoNames:
             # Every space of the household, not only the token's user's.
             Kind.SPACE: lambda: client.spaces.list(all_users=True),
         }
+
+
+async def name_or_none(names: LektoNames, kind: Kind, item_id: UUID) -> str | None:
+    """Return the name of ``item_id``, or None also when Lekto cannot give it now."""
+    try:
+        return await names.name(kind, item_id)
+    except LektoError:
+        return None

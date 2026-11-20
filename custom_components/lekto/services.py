@@ -1,7 +1,7 @@
-"""The actions of the Lekto integration: upload a file, fetch the mailboxes now."""
+"""The actions of the Lekto integration: upload, fetch the mailboxes, count and list documents."""
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import probatio
 from homeassistant.components.media_source import MediaSourceError, async_resolve_media
@@ -14,6 +14,7 @@ from homeassistant.core import (
     callback,
 )
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import service
 from homeassistant.helpers.os_error import os_read_error
 from homeassistant.helpers.selector import MediaSelector
@@ -21,15 +22,33 @@ from pylekto import LektoConflictError, LektoError, LektoValidationError
 
 from .capabilities import RIGHTS, Capability
 from .const import DOMAIN
-from .names import Kind
+from .names import FIELD_KINDS, NEEDS, Kind, name_or_none
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from uuid import UUID
+
+    from homeassistant.util.json import JsonValueType
+    from pylekto.models import ListedDocument
+    from pylekto.types import DocumentFilter
+
     from .coordinator import LektoConfigEntry, LektoCoordinator
 
 CONF_CONFIG_ENTRY_ID = "config_entry_id"
 CONF_FILE = "file"
 CONF_SPACE = "space"
 CONF_MAILBOX = "mailbox"
+CONF_LANE = "lane"
+CONF_CONTACT = "contact"
+CONF_DOCUMENT_TYPE = "document_type"
+CONF_TAG = "tag"
+CONF_DATE_FROM = "date_from"
+CONF_DATE_TO = "date_to"
+CONF_LIMIT = "limit"
+CONF_FIELDS = "fields"
+
+LANES = ["green", "yellow", "red", "processing"]
+LIST_FIELDS = ["lane", "contact", "document_type", "tags", "space"]
 
 # Only what Lekto processes is offered, so the picker shows no file Lekto would refuse.
 ACCEPT = ["application/pdf", "image/jpeg", "image/png", "image/tiff", "message/rfc822"]
@@ -40,6 +59,26 @@ UPLOAD_SCHEMA = probatio.Schema(
         probatio.Required(CONF_FILE): MediaSelector({"accept": ACCEPT}),
         probatio.Optional(CONF_NAME): str,
         probatio.Optional(CONF_SPACE): str,
+    }
+)
+FILTERS = {
+    probatio.Required(CONF_CONFIG_ENTRY_ID): str,
+    probatio.Optional(CONF_LANE): probatio.All(cv.ensure_list, [probatio.In(LANES)]),
+    probatio.Optional(CONF_CONTACT): probatio.All(cv.ensure_list, [cv.string]),
+    probatio.Optional(CONF_DOCUMENT_TYPE): probatio.All(cv.ensure_list, [cv.string]),
+    probatio.Optional(CONF_TAG): probatio.All(cv.ensure_list, [cv.string]),
+    probatio.Optional(CONF_SPACE): probatio.All(cv.ensure_list, [cv.string]),
+    probatio.Optional(CONF_DATE_FROM): cv.date,
+    probatio.Optional(CONF_DATE_TO): cv.date,
+}
+COUNT_SCHEMA = probatio.Schema(FILTERS)
+LIST_SCHEMA = probatio.Schema(
+    {
+        **FILTERS,
+        probatio.Optional(CONF_LIMIT, default=10): probatio.All(
+            probatio.Coerce(int), probatio.Range(min=1, max=50)
+        ),
+        probatio.Optional(CONF_FIELDS): probatio.All(cv.ensure_list, [probatio.In(LIST_FIELDS)]),
     }
 )
 FETCH_MAIL_SCHEMA = probatio.Schema(
@@ -57,6 +96,16 @@ def async_setup_services(hass: HomeAssistant) -> None:
         DOMAIN, "upload", _upload, UPLOAD_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
     hass.services.async_register(
+        DOMAIN, "count", _count, COUNT_SCHEMA, supports_response=SupportsResponse.ONLY
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "list_documents",
+        _list_documents,
+        LIST_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
         DOMAIN,
         "fetch_mail",
         _fetch_mail,
@@ -65,13 +114,13 @@ def async_setup_services(hass: HomeAssistant) -> None:
     )
 
 
-def _coordinator(call: ServiceCall, capability: Capability) -> LektoCoordinator:
+def _coordinator(call: ServiceCall, capability: Capability | None) -> LektoCoordinator:
     """Every action runs on one entry, and only if its token has the rights."""
     entry: LektoConfigEntry = service.async_get_config_entry(
         call.hass, DOMAIN, call.data[CONF_CONFIG_ENTRY_ID]
     )
     coordinator = entry.runtime_data
-    if capability not in coordinator.capabilities:
+    if capability is not None and capability not in coordinator.capabilities:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="action_lacks_rights",
@@ -129,29 +178,140 @@ async def _upload(call: ServiceCall) -> ServiceResponse:
 
 
 async def _space(coordinator: LektoCoordinator, name: str) -> str:
-    """Lekto takes a space's id; the user names it."""
+    """Lekto takes a space's id; the user names it, and it must name one."""
+    ids = await _ids(coordinator, Kind.SPACE, name)
+    if len(ids) > 1:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="ambiguous_name",
+            translation_placeholders={"name": name},
+        )
+    return str(ids[0])
+
+
+async def _ids(coordinator: LektoCoordinator, kind: Kind, name: str) -> list[UUID]:
+    """Lekto filters by ids, which nobody in Home Assistant knows; the user names them."""
     names = coordinator.names
-    if not names.may(Kind.SPACE):
+    if not names.may(kind):
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="action_lacks_rights",
-            translation_placeholders={"rights": ", ".join(sorted(RIGHTS[Capability.SPACES]))},
+            translation_placeholders={"rights": ", ".join(sorted(RIGHTS[NEEDS[kind]]))},
         )
     try:
-        ids = await names.ids(Kind.SPACE, name)
+        ids = await names.ids(kind, name)
     except LektoError as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="action_failed",
             translation_placeholders={"error": str(err)},
         ) from err
-    if len(ids) != 1:
+    if not ids:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
-            translation_key="unknown_name" if not ids else "ambiguous_name",
+            translation_key="unknown_name",
             translation_placeholders={"name": name},
         )
-    return str(ids[0])
+    return ids
+
+
+async def _filters(coordinator: LektoCoordinator, data: Mapping[str, Any]) -> DocumentFilter:
+    """Lekto filters by ids within the caller's reach; the household needs `all_users`."""
+    filters: DocumentFilter = {"all_users": True}
+    if lanes := data.get(CONF_LANE):
+        filters["lane"] = lanes
+    if names := data.get(CONF_CONTACT):
+        filters["contact_id"] = await _all_ids(coordinator, Kind.CONTACT, names)
+    if names := data.get(CONF_DOCUMENT_TYPE):
+        filters["document_type_id"] = await _all_ids(coordinator, Kind.DOCUMENT_TYPE, names)
+    if names := data.get(CONF_TAG):
+        filters["tag_id"] = await _all_ids(coordinator, Kind.TAG, names)
+    if names := data.get(CONF_SPACE):
+        filters["space_id"] = await _all_ids(coordinator, Kind.SPACE, names)
+    if (start := data.get(CONF_DATE_FROM)) is not None:
+        filters["document_date_from"] = start
+    if (end := data.get(CONF_DATE_TO)) is not None:
+        filters["document_date_to"] = end
+    return filters
+
+
+async def _all_ids(coordinator: LektoCoordinator, kind: Kind, names: list[str]) -> list[UUID]:
+    """Several names of one kind take a document that has any of them."""
+    return [item_id for name in names for item_id in await _ids(coordinator, kind, name)]
+
+
+async def _count(call: ServiceCall) -> ServiceResponse:
+    """Count with the same filters as the list, so a script can check before it lists."""
+    coordinator = _coordinator(call, None)
+    filters = await _filters(coordinator, call.data)
+    try:
+        counted = await coordinator.client.documents.count(**filters)
+    except LektoError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="action_failed",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    return {"count": counted.total}
+
+
+async def _list_documents(call: ServiceCall) -> ServiceResponse:
+    """List a few of the household's documents, newest first, for a card, a message or a voice."""
+    coordinator = _coordinator(call, Capability.DOCUMENTS)
+    filters = await _filters(coordinator, call.data)
+    wanted = set(call.data.get(CONF_FIELDS, []))
+    try:
+        page = await coordinator.client.documents.page(
+            limit=call.data[CONF_LIMIT], sort="-created_at", **filters
+        )
+    except LektoError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="action_failed",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    documents: list[JsonValueType] = [
+        await _listed(coordinator, document, wanted) for document in page.items
+    ]
+    return {"documents": documents}
+
+
+async def _listed(
+    coordinator: LektoCoordinator, document: ListedDocument, wanted: set[str]
+) -> dict[str, JsonValueType]:
+    """Give what identifies the document always, the rest when asked: names cost requests."""
+    listed: dict[str, JsonValueType] = {
+        "id": str(document.id),
+        "title": document.title,
+        "date": document.document_date.isoformat() if document.document_date else None,
+        "url": _link(coordinator, str(document.id)),
+    }
+    if "lane" in wanted:
+        listed["lane"] = document.lane
+    names = coordinator.names
+    for field, item_id in (
+        ("contact", document.contact_id),
+        ("document_type", document.document_type_id),
+        ("space", document.space_id),
+    ):
+        if field in wanted:
+            kind = FIELD_KINDS[field]
+            listed[field] = (
+                await name_or_none(names, kind, item_id)
+                if item_id is not None and names.may(kind)
+                else None
+            )
+    if "tags" in wanted:
+        listed["tags"] = (
+            [
+                name
+                for tag_id in document.tag_ids
+                if (name := await name_or_none(names, Kind.TAG, tag_id)) is not None
+            ]
+            if names.may(Kind.TAG)
+            else []
+        )
+    return listed
 
 
 async def _fetch_mail(call: ServiceCall) -> ServiceResponse:

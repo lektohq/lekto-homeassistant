@@ -16,9 +16,9 @@ reads the token's rights when it sets up and offers what they allow.
 | Optional right | What it opens |
 | --- | --- |
 | `system:read` | the diagnostic sensors: jobs, search index, classifier |
-| `documents:read` and `admin:documents_all` | Lekto's events: the document event, and the numbers updated as soon as something changes; `admin:documents_all` lets the token read every document of the household |
-| `master_data:read` | the names of contacts, document types and tags in the document event's fields |
-| `spaces:read` (with `admin:documents_all`) | the name of the space in the document event's fields, and the space of an upload by its name |
+| `documents:read` and `admin:documents_all` | Lekto's events: the document event, and the numbers updated as soon as something changes; `admin:documents_all` lets the token read every document of the household; and the action that lists documents |
+| `master_data:read` | the names of contacts, document types and tags: in the document event's fields, and the actions' filters and listed fields |
+| `spaces:read` (with `admin:documents_all`) | the names of spaces: in the document event's fields, the space of an upload, and the actions' filters and listed fields |
 | `documents:upload` | the action that uploads a file ([actions](actions.md)) |
 | `system:read`, `system:write` and `admin:mailboxes` | the action that fetches the mailboxes now |
 

@@ -12,6 +12,6 @@ One entry sets up one Lekto instance, with an API token made for Home Assistant.
 - [Setup](setup.md): the token and its rights, the parameters
 - [Sensors](sensors.md): what they count
 - [Document event](events.md): for automations
-- [Actions](actions.md): upload a file, fetch the mailboxes
+- [Actions](actions.md): upload a file, fetch the mailboxes, count and list documents
 - [Diagnostics](diagnostics.md): what the file for a problem report holds
 - [Removal](removal.md)

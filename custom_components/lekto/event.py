@@ -12,7 +12,7 @@ from pylekto import LektoError
 from .capabilities import Capability
 from .const import CONF_EVENT_FIELDS, EVENT_FIELDS
 from .entity import LektoEntity
-from .names import FIELD_KINDS, Kind
+from .names import FIELD_KINDS, Kind, name_or_none
 from .stream import signal
 
 if TYPE_CHECKING:
@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from pylekto.models import EventMessage
 
     from .coordinator import LektoConfigEntry, LektoCoordinator
-    from .names import LektoNames
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -130,18 +129,10 @@ async def document_fields(
     for field, item_id in item_ids.items():
         kind = FIELD_KINDS[field]
         if field in wanted and item_id is not None and names.may(kind):
-            name = await _name(names, kind, item_id)
+            name = await name_or_none(names, kind, item_id)
             if name is not None:
                 fields[field] = name
     if "tags" in wanted and names.may(Kind.TAG):
-        tags = [await _name(names, Kind.TAG, tag_id) for tag_id in document.tag_ids]
+        tags = [await name_or_none(names, Kind.TAG, tag_id) for tag_id in document.tag_ids]
         fields["tags"] = [tag for tag in tags if tag is not None]
     return fields
-
-
-async def _name(names: LektoNames, kind: Kind, item_id: UUID) -> str | None:
-    """Leave out a name Lekto cannot give now, rather than fail the event."""
-    try:
-        return await names.name(kind, item_id)
-    except LektoError:
-        return None

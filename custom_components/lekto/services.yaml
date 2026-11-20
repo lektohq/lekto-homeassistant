@@ -34,3 +34,115 @@ fetch_mail:
       required: false
       selector:
         text:
+count:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: lekto
+    lane:
+      required: false
+      selector:
+        select:
+          options:
+            - green
+            - yellow
+            - red
+            - processing
+          multiple: true
+          translation_key: lane
+    contact:
+      required: false
+      selector:
+        text:
+          multiple: true
+    document_type:
+      required: false
+      selector:
+        text:
+          multiple: true
+    tag:
+      required: false
+      selector:
+        text:
+          multiple: true
+    space:
+      required: false
+      selector:
+        text:
+          multiple: true
+    date_from:
+      required: false
+      selector:
+        date:
+    date_to:
+      required: false
+      selector:
+        date:
+list_documents:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: lekto
+    lane:
+      required: false
+      selector:
+        select:
+          options:
+            - green
+            - yellow
+            - red
+            - processing
+          multiple: true
+          translation_key: lane
+    contact:
+      required: false
+      selector:
+        text:
+          multiple: true
+    document_type:
+      required: false
+      selector:
+        text:
+          multiple: true
+    tag:
+      required: false
+      selector:
+        text:
+          multiple: true
+    space:
+      required: false
+      selector:
+        text:
+          multiple: true
+    date_from:
+      required: false
+      selector:
+        date:
+    date_to:
+      required: false
+      selector:
+        date:
+    limit:
+      required: false
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
+    fields:
+      required: false
+      selector:
+        select:
+          options:
+            - lane
+            - contact
+            - document_type
+            - tags
+            - space
+          multiple: true
+          translation_key: document_fields

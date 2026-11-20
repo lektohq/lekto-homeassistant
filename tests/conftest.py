@@ -30,6 +30,7 @@ from .const import (
     ENTRY_DATA,
     INSTANCE_ID,
     MAILBOXES,
+    PAGE,
     SPACES,
     TAGS,
     classifier_status,
@@ -85,6 +86,7 @@ def lekto_class() -> Iterator[MagicMock]:
         client.documents.count.return_value = documents_count()
         client.documents.get.return_value = document()
         client.documents.upload.return_value = ACCEPTED
+        client.documents.page.return_value = PAGE
         client.mailboxes = create_autospec(MailboxesResource, instance=True)
         client.mailboxes.list.return_value = MAILBOXES
         client.health = create_autospec(HealthResource, instance=True)

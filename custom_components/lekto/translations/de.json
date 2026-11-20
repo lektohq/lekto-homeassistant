@@ -74,7 +74,7 @@
             }
           },
           "lane": {
-            "name": "Spur",
+            "name": "Lane",
             "state": {
               "yellow": "Prüfen",
               "red": "Eingreifen"
@@ -123,7 +123,7 @@
         "name": "Posteingang prüfen"
       },
       "inbox_worst_lane": {
-        "name": "Posteingang schlimmste Spur",
+        "name": "Posteingang schlimmste Lane",
         "state": {
           "green": "Neu",
           "yellow": "Prüfen",
@@ -257,6 +257,15 @@
     }
   },
   "selector": {
+    "document_fields": {
+      "options": {
+        "lane": "Lane",
+        "contact": "Kontakt",
+        "document_type": "Dokumenttyp",
+        "tags": "Tags",
+        "space": "Space"
+      }
+    },
     "event_fields": {
       "options": {
         "title": "Titel",
@@ -266,9 +275,115 @@
         "tags": "Tags",
         "space": "Space"
       }
+    },
+    "lane": {
+      "options": {
+        "green": "Erledigt",
+        "yellow": "Prüfen",
+        "red": "Eingreifen",
+        "processing": "In Verarbeitung"
+      }
     }
   },
   "services": {
+    "count": {
+      "name": "Dokumente zählen",
+      "description": "Zählt die Dokumente des Haushalts, die zu den Filtern passen; ein leerer Filter nimmt alle.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto-Instanz",
+          "description": "Die Lekto-Instanz, die gefragt wird."
+        },
+        "lane": {
+          "name": "Lane",
+          "description": "Nur Dokumente in diesen Lanes."
+        },
+        "contact": {
+          "name": "Kontakt",
+          "description": "Nur Dokumente dieser Kontakte, über den Namen. Braucht master_data:read."
+        },
+        "document_type": {
+          "name": "Dokumenttyp",
+          "description": "Nur Dokumente dieser Typen, über den Namen. Braucht master_data:read."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Nur Dokumente mit einem dieser Tags, über den Namen. Braucht master_data:read."
+        },
+        "space": {
+          "name": "Space",
+          "description": "Nur Dokumente in diesen Spaces, über den Namen. Braucht spaces:read mit admin:documents_all."
+        },
+        "date_from": {
+          "name": "Von",
+          "description": "Nur Dokumente mit Datum an oder nach diesem Tag."
+        },
+        "date_to": {
+          "name": "Bis",
+          "description": "Nur Dokumente mit Datum an oder vor diesem Tag."
+        }
+      }
+    },
+    "fetch_mail": {
+      "name": "Mails abrufen",
+      "description": "Lässt Lekto seine Postfächer jetzt abrufen statt beim nächsten Intervall.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto-Instanz",
+          "description": "Die Lekto-Instanz, deren Postfächer abgerufen werden."
+        },
+        "mailbox": {
+          "name": "Postfach",
+          "description": "Der Name eines Postfachs; leer: alle aktiven Postfächer."
+        }
+      }
+    },
+    "list_documents": {
+      "name": "Dokumente auflisten",
+      "description": "Listet die Dokumente des Haushalts, die zu den Filtern passen, die zuletzt in Lekto eingegangenen zuerst, mit Titel, Datum und Link.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto-Instanz",
+          "description": "Die Lekto-Instanz, die gefragt wird."
+        },
+        "lane": {
+          "name": "Lane",
+          "description": "Nur Dokumente in diesen Lanes."
+        },
+        "contact": {
+          "name": "Kontakt",
+          "description": "Nur Dokumente dieser Kontakte, über den Namen. Braucht master_data:read."
+        },
+        "document_type": {
+          "name": "Dokumenttyp",
+          "description": "Nur Dokumente dieser Typen, über den Namen. Braucht master_data:read."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Nur Dokumente mit einem dieser Tags, über den Namen. Braucht master_data:read."
+        },
+        "space": {
+          "name": "Space",
+          "description": "Nur Dokumente in diesen Spaces, über den Namen. Braucht spaces:read mit admin:documents_all."
+        },
+        "date_from": {
+          "name": "Von",
+          "description": "Nur Dokumente mit Datum an oder nach diesem Tag."
+        },
+        "date_to": {
+          "name": "Bis",
+          "description": "Nur Dokumente mit Datum an oder vor diesem Tag."
+        },
+        "limit": {
+          "name": "Anzahl",
+          "description": "Wie viele Dokumente höchstens, 1 bis 50."
+        },
+        "fields": {
+          "name": "Felder",
+          "description": "Was jedes Dokument neben ID, Titel, Datum und Link mitbringt. Kontakt, Typ und Tags brauchen master_data:read, Space braucht spaces:read; ohne das Recht bleibt das Feld leer."
+        }
+      }
+    },
     "upload": {
       "name": "Dokument hochladen",
       "description": "Lädt eine Datei aus den Medien von Home Assistant zu Lekto hoch, das sie wie jedes andere Dokument verarbeitet.",
@@ -288,20 +403,6 @@
         "space": {
           "name": "Space",
           "description": "Der Name des Space, in den das Dokument geht; leer: der persönliche Space des Token-Nutzers."
-        }
-      }
-    },
-    "fetch_mail": {
-      "name": "Mails abrufen",
-      "description": "Lässt Lekto seine Postfächer jetzt abrufen statt beim nächsten Intervall.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Lekto-Instanz",
-          "description": "Die Lekto-Instanz, deren Postfächer abgerufen werden."
-        },
-        "mailbox": {
-          "name": "Postfach",
-          "description": "Der Name eines Postfachs; leer: alle aktiven Postfächer."
         }
       }
     }
