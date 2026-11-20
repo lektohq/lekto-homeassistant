@@ -145,14 +145,41 @@
     }
   },
   "exceptions": {
+    "action_failed": {
+      "message": "Lekto lehnte ab oder war nicht erreichbar: {error}"
+    },
+    "action_lacks_rights": {
+      "message": "Dem Token fehlen die Rechte für diese Aktion: {rights}."
+    },
+    "already_in_lekto": {
+      "message": "Lekto hat diese Datei schon, als Dokument {document_id}."
+    },
+    "already_in_lekto_unreadable": {
+      "message": "Lekto hat diese Datei schon, in einem Dokument, das das Token nicht lesen darf."
+    },
+    "ambiguous_name": {
+      "message": "Lekto kennt mehr als ein „{name}“."
+    },
     "cannot_connect": {
       "message": "Verbindung zu Lekto fehlgeschlagen."
+    },
+    "fetch_failed": {
+      "message": "Lekto konnte das Postfach {mailbox} nicht abrufen: {error}"
+    },
+    "file_refused": {
+      "message": "Lekto hat die Datei abgelehnt: {error}"
     },
     "invalid_auth": {
       "message": "Lekto nimmt das Token nicht an: Es ist unbekannt, abgelaufen oder widerrufen."
     },
     "missing_rights": {
       "message": "Dem Token fehlen Rechte: {rights}."
+    },
+    "not_a_local_file": {
+      "message": "Lekto kann nur eine Datei aus den Medien von Home Assistant nehmen."
+    },
+    "unknown_name": {
+      "message": "Lekto kennt nichts mit dem Namen „{name}“."
     },
     "unsupported": {
       "message": "Der Server antwortet nicht wie Lekto 0.16 oder neuer."
@@ -238,6 +265,44 @@
         "document_type": "Dokumenttyp",
         "tags": "Tags",
         "space": "Space"
+      }
+    }
+  },
+  "services": {
+    "upload": {
+      "name": "Dokument hochladen",
+      "description": "Lädt eine Datei aus den Medien von Home Assistant zu Lekto hoch, das sie wie jedes andere Dokument verarbeitet.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto-Instanz",
+          "description": "Die Lekto-Instanz, zu der hochgeladen wird."
+        },
+        "file": {
+          "name": "Datei",
+          "description": "Ein PDF, ein JPEG-, PNG- oder TIFF-Bild oder eine Mail aus den Medien von Home Assistant."
+        },
+        "name": {
+          "name": "Dateiname",
+          "description": "Der Name, den Lekto behält; leer: der Name der Datei."
+        },
+        "space": {
+          "name": "Space",
+          "description": "Der Name des Space, in den das Dokument geht; leer: der persönliche Space des Token-Nutzers."
+        }
+      }
+    },
+    "fetch_mail": {
+      "name": "Mails abrufen",
+      "description": "Lässt Lekto seine Postfächer jetzt abrufen statt beim nächsten Intervall.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto-Instanz",
+          "description": "Die Lekto-Instanz, deren Postfächer abgerufen werden."
+        },
+        "mailbox": {
+          "name": "Postfach",
+          "description": "Der Name eines Postfachs; leer: alle aktiven Postfächer."
+        }
       }
     }
   }

@@ -20,6 +20,8 @@ class Capability(StrEnum):
     EVENTS = "events"
     NAMES = "names"
     SPACES = "spaces"
+    UPLOAD = "upload"
+    MAIL = "mail"
 
 
 RIGHTS: Final[dict[Capability, frozenset[str]]] = {
@@ -27,6 +29,8 @@ RIGHTS: Final[dict[Capability, frozenset[str]]] = {
     Capability.EVENTS: frozenset({"documents:read", "admin:documents_all"}),
     Capability.NAMES: frozenset({"master_data:read"}),
     Capability.SPACES: frozenset({"spaces:read", "admin:documents_all"}),
+    Capability.UPLOAD: frozenset({"documents:upload"}),
+    Capability.MAIL: frozenset({"system:read", "system:write", "admin:mailboxes"}),
 }
 
 # The repair removes these from the entity registry; a test keeps them in step with the sensors.

@@ -145,14 +145,41 @@
     }
   },
   "exceptions": {
+    "action_failed": {
+      "message": "Lekto refused or could not be reached: {error}"
+    },
+    "action_lacks_rights": {
+      "message": "The token lacks the rights for this action: {rights}."
+    },
+    "already_in_lekto": {
+      "message": "Lekto holds this file already, as document {document_id}."
+    },
+    "already_in_lekto_unreadable": {
+      "message": "Lekto holds this file already, in a document the token may not read."
+    },
+    "ambiguous_name": {
+      "message": "Lekto knows more than one \"{name}\"."
+    },
     "cannot_connect": {
       "message": "Failed to connect to Lekto."
+    },
+    "fetch_failed": {
+      "message": "Lekto could not fetch the mailbox {mailbox}: {error}"
+    },
+    "file_refused": {
+      "message": "Lekto refused the file: {error}"
     },
     "invalid_auth": {
       "message": "Lekto does not accept the token: it is unknown, expired or revoked."
     },
     "missing_rights": {
       "message": "The token lacks rights: {rights}."
+    },
+    "not_a_local_file": {
+      "message": "Lekto can take only a file stored in Home Assistant's media."
+    },
+    "unknown_name": {
+      "message": "Lekto knows nothing called \"{name}\"."
     },
     "unsupported": {
       "message": "The server does not answer as Lekto 0.16 or newer does."
@@ -238,6 +265,44 @@
         "document_type": "Document type",
         "tags": "Tags",
         "space": "Space"
+      }
+    }
+  },
+  "services": {
+    "upload": {
+      "name": "Upload a document",
+      "description": "Uploads a file from Home Assistant's media to Lekto, which processes it like any other document.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto instance",
+          "description": "The Lekto instance to upload to."
+        },
+        "file": {
+          "name": "File",
+          "description": "A PDF, a JPEG, PNG or TIFF image, or a mail from Home Assistant's media."
+        },
+        "name": {
+          "name": "File name",
+          "description": "The name Lekto keeps; the file's own name if empty."
+        },
+        "space": {
+          "name": "Space",
+          "description": "The name of the space the document goes to; the token user's personal space if empty."
+        }
+      }
+    },
+    "fetch_mail": {
+      "name": "Fetch mail",
+      "description": "Has Lekto fetch its mailboxes now instead of at their next interval.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto instance",
+          "description": "The Lekto instance whose mailboxes to fetch."
+        },
+        "mailbox": {
+          "name": "Mailbox",
+          "description": "The name of one mailbox; every active mailbox if empty."
+        }
       }
     }
   }

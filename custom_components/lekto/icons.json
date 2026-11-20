@@ -55,5 +55,13 @@
         "default": "mdi:play-circle-outline"
       }
     }
+  },
+  "services": {
+    "fetch_mail": {
+      "service": "mdi:email-sync"
+    },
+    "upload": {
+      "service": "mdi:file-upload"
+    }
   }
 }
