@@ -257,6 +257,15 @@
     }
   },
   "selector": {
+    "document_fields": {
+      "options": {
+        "lane": "Lane",
+        "contact": "Contact",
+        "document_type": "Document type",
+        "tags": "Tags",
+        "space": "Space"
+      }
+    },
     "event_fields": {
       "options": {
         "title": "Title",
@@ -266,9 +275,115 @@
         "tags": "Tags",
         "space": "Space"
       }
+    },
+    "lane": {
+      "options": {
+        "green": "Done",
+        "yellow": "Review",
+        "red": "Action needed",
+        "processing": "Processing"
+      }
     }
   },
   "services": {
+    "count": {
+      "name": "Count documents",
+      "description": "Counts the household's documents that match the filters; every filter left empty takes all.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto instance",
+          "description": "The Lekto instance to ask."
+        },
+        "lane": {
+          "name": "Lane",
+          "description": "Only documents in these lanes."
+        },
+        "contact": {
+          "name": "Contact",
+          "description": "Only documents of these contacts, by name. Needs master_data:read."
+        },
+        "document_type": {
+          "name": "Document type",
+          "description": "Only documents of these types, by name. Needs master_data:read."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Only documents with any of these tags, by name. Needs master_data:read."
+        },
+        "space": {
+          "name": "Space",
+          "description": "Only documents in these spaces, by name. Needs spaces:read with admin:documents_all."
+        },
+        "date_from": {
+          "name": "From",
+          "description": "Only documents dated on or after this day."
+        },
+        "date_to": {
+          "name": "To",
+          "description": "Only documents dated on or before this day."
+        }
+      }
+    },
+    "fetch_mail": {
+      "name": "Fetch mail",
+      "description": "Has Lekto fetch its mailboxes now instead of at their next interval.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto instance",
+          "description": "The Lekto instance whose mailboxes to fetch."
+        },
+        "mailbox": {
+          "name": "Mailbox",
+          "description": "The name of one mailbox; every active mailbox if empty."
+        }
+      }
+    },
+    "list_documents": {
+      "name": "List documents",
+      "description": "Lists the household's documents that match the filters, newest first by when they came into Lekto, with their title, date and link.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Lekto instance",
+          "description": "The Lekto instance to ask."
+        },
+        "lane": {
+          "name": "Lane",
+          "description": "Only documents in these lanes."
+        },
+        "contact": {
+          "name": "Contact",
+          "description": "Only documents of these contacts, by name. Needs master_data:read."
+        },
+        "document_type": {
+          "name": "Document type",
+          "description": "Only documents of these types, by name. Needs master_data:read."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Only documents with any of these tags, by name. Needs master_data:read."
+        },
+        "space": {
+          "name": "Space",
+          "description": "Only documents in these spaces, by name. Needs spaces:read with admin:documents_all."
+        },
+        "date_from": {
+          "name": "From",
+          "description": "Only documents dated on or after this day."
+        },
+        "date_to": {
+          "name": "To",
+          "description": "Only documents dated on or before this day."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "How many documents at most, from 1 to 50."
+        },
+        "fields": {
+          "name": "Fields",
+          "description": "What each document carries beside its id, title, date and link. Contact, type and tags need master_data:read, space needs spaces:read; without the right the field is empty."
+        }
+      }
+    },
     "upload": {
       "name": "Upload a document",
       "description": "Uploads a file from Home Assistant's media to Lekto, which processes it like any other document.",
@@ -288,20 +403,6 @@
         "space": {
           "name": "Space",
           "description": "The name of the space the document goes to; the token user's personal space if empty."
-        }
-      }
-    },
-    "fetch_mail": {
-      "name": "Fetch mail",
-      "description": "Has Lekto fetch its mailboxes now instead of at their next interval.",
-      "fields": {
-        "config_entry_id": {
-          "name": "Lekto instance",
-          "description": "The Lekto instance whose mailboxes to fetch."
-        },
-        "mailbox": {
-          "name": "Mailbox",
-          "description": "The name of one mailbox; every active mailbox if empty."
         }
       }
     }

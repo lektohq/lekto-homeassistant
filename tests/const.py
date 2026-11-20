@@ -12,11 +12,13 @@ from pylekto.models import (
     DocumentAccepted,
     DocumentCountOut,
     DocumentDetails,
+    DocumentPage,
     DocumentTypeOut,
     EventMessage,
     Health,
     InboxSummaryOut,
     JobsSummaryOut,
+    ListedDocument,
     MailboxOut,
     Me,
     SearchStatusOut,
@@ -148,4 +150,18 @@ MAILBOXES = [
 ]
 ACCEPTED = DocumentAccepted.model_construct(
     id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2501"), status_url="/api/v1/documents/x"
+)
+
+LISTED = ListedDocument.model_construct(
+    id=UUID(DOCUMENT_ID),
+    title="Electricity bill November",
+    document_date=date(2026, 11, 3),
+    lane="red",
+    contact_id=CONTACTS[0].id,
+    document_type_id=None,
+    tag_ids=[TAGS[0].id],
+    space_id=SPACES[0].id,
+)
+PAGE = DocumentPage.model_construct(
+    items=[LISTED, LISTED.model_copy(update={"document_date": None})]
 )

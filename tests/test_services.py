@@ -1,9 +1,11 @@
-"""The actions: upload a file, fetch the mailboxes now."""
+"""The actions: upload a file, fetch the mailboxes, count and list documents."""
 
+from datetime import date
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 from uuid import UUID
 
+import probatio
 import pytest
 from homeassistant.components.media_source import Unresolvable
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
@@ -13,7 +15,19 @@ from pylekto.models import Problem
 
 from custom_components.lekto.const import DOMAIN
 
-from .const import ACCEPTED, MAILBOXES, SPACES, URL, me
+from .const import (
+    ACCEPTED,
+    CONTACTS,
+    DOCUMENT_ID,
+    DOCUMENT_TYPES,
+    LISTED,
+    MAILBOXES,
+    PAGE,
+    SPACES,
+    TAGS,
+    URL,
+    me,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -345,3 +359,200 @@ async def test_fetch_ambiguous_mailbox(
 
     assert raised.value.translation_key == "ambiguous_name"
     lekto.mailboxes.fetch.assert_not_awaited()
+
+
+async def test_count_all(hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry) -> None:
+    """Without filters every document of the household counts."""
+    response = await _call(hass, loaded, "count")
+
+    lekto.documents.count.assert_awaited_with(all_users=True)
+    assert response == {"count": 1234}
+
+
+async def test_count_filtered(
+    hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry
+) -> None:
+    """Names become ids; a name several share takes all of them."""
+    await _call(
+        hass,
+        loaded,
+        "count",
+        lane=["red", "processing"],
+        contact=["sample insurance"],
+        document_type="Invoice",
+        tag=["Car"],
+        space=["Household"],
+        date_from="2026-01-01",
+        date_to="2026-11-30",
+    )
+
+    lekto.documents.count.assert_awaited_with(
+        all_users=True,
+        lane=["red", "processing"],
+        contact_id=[CONTACTS[1].id, CONTACTS[2].id],
+        document_type_id=[DOCUMENT_TYPES[0].id],
+        tag_id=[TAGS[0].id],
+        space_id=[SPACES[0].id],
+        document_date_from=date(2026, 1, 1),
+        document_date_to=date(2026, 11, 30),
+    )
+
+
+async def test_count_unknown_name(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
+    """A name Lekto does not know is refused."""
+    with pytest.raises(ServiceValidationError) as raised:
+        await _call(hass, loaded, "count", contact=["Nobody"])
+
+    assert raised.value.translation_key == "unknown_name"
+
+
+async def test_count_name_without_rights(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """A filter by name needs the right to list the names."""
+    lekto.connect.return_value = me(rights=[r for r in me().rights if r != "master_data:read"])
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+
+    with pytest.raises(ServiceValidationError) as raised:
+        await _call(hass, config_entry, "count", tag=["Car"])
+
+    assert raised.value.translation_key == "action_lacks_rights"
+
+
+async def test_count_failed(hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry) -> None:
+    """Lekto not answering fails the action."""
+    lekto.documents.count.side_effect = LektoConnectionError("refused")
+
+    with pytest.raises(HomeAssistantError) as raised:
+        await _call(hass, loaded, "count")
+
+    assert raised.value.translation_key == "action_failed"
+
+
+async def test_list(hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry) -> None:
+    """The newest ten of the household, each with id, title, date and link."""
+    response = await _call(hass, loaded, "list_documents")
+
+    lekto.documents.page.assert_awaited_once_with(limit=10, sort="-created_at", all_users=True)
+    link = f"{URL}/ui/documents/{DOCUMENT_ID}"
+    assert response == {
+        "documents": [
+            {
+                "id": DOCUMENT_ID,
+                "title": "Electricity bill November",
+                "date": "2026-11-03",
+                "url": link,
+            },
+            {"id": DOCUMENT_ID, "title": "Electricity bill November", "date": None, "url": link},
+        ]
+    }
+
+
+async def test_list_fields(hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry) -> None:
+    """Asked fields come with their names; one Lekto cannot name stays empty."""
+    response = await _call(
+        hass,
+        loaded,
+        "list_documents",
+        limit=1,
+        fields=["lane", "contact", "document_type", "tags", "space"],
+    )
+
+    lekto.documents.page.assert_awaited_once_with(limit=1, sort="-created_at", all_users=True)
+    first = response["documents"][0]
+    assert {key: first[key] for key in ("lane", "contact", "document_type", "tags", "space")} == {
+        "lane": "red",
+        "contact": "Example Energy",
+        "document_type": None,
+        "tags": ["Car"],
+        "space": "Household",
+    }
+
+
+async def test_list_fields_without_names(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """Without the rights to list names, the named fields stay empty."""
+    rights = [r for r in me().rights if r not in {"master_data:read", "spaces:read"}]
+    lekto.connect.return_value = me(rights=rights)
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+
+    response = await _call(hass, config_entry, "list_documents", fields=["contact", "tags"])
+
+    assert response["documents"][0]["contact"] is None
+    assert response["documents"][0]["tags"] == []
+
+
+async def test_list_failed(hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry) -> None:
+    """Lekto not answering fails the action."""
+    lekto.documents.page.side_effect = LektoConnectionError("refused")
+
+    with pytest.raises(HomeAssistantError) as raised:
+        await _call(hass, loaded, "list_documents")
+
+    assert raised.value.translation_key == "action_failed"
+
+
+async def test_list_without_rights(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """The list needs the rights to read the household's documents."""
+    lekto.connect.return_value = me(rights=["admin:count_all", "documents:count"])
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+
+    with pytest.raises(ServiceValidationError) as raised:
+        await _call(hass, config_entry, "list_documents")
+
+    assert raised.value.translation_key == "action_lacks_rights"
+
+
+async def test_list_limit(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
+    """More than 50 is refused."""
+    with pytest.raises(probatio.Invalid):
+        await _call(hass, loaded, "list_documents", limit=51)
+
+
+async def test_single_values(
+    hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry
+) -> None:
+    """A single lane or field may come without a list, as YAML writes it."""
+    response = await _call(
+        hass, loaded, "list_documents", lane="red", contact="Example Energy", fields="lane"
+    )
+
+    lekto.documents.page.assert_awaited_once_with(
+        limit=10,
+        sort="-created_at",
+        all_users=True,
+        lane=["red"],
+        contact_id=[CONTACTS[0].id],
+    )
+    assert response["documents"][0]["lane"] == "red"
+
+
+@pytest.mark.parametrize("data", [{"lane": ["purple"]}, {"fields": ["title"]}])
+async def test_refused_values(
+    hass: HomeAssistant, loaded: MockConfigEntry, data: dict[str, Any]
+) -> None:
+    """A lane or field the action does not know is refused."""
+    with pytest.raises(probatio.Invalid):
+        await _call(hass, loaded, "list_documents", **data)
+
+
+async def test_list_processing_and_unnamed(
+    hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry
+) -> None:
+    """A document in processing has no lane; a name Lekto cannot give now is empty."""
+    lekto.documents.page.return_value = PAGE.model_copy(
+        update={"items": [LISTED.model_copy(update={"lane": None})]}
+    )
+    loaded.runtime_data.names._fetched.clear()
+    lekto.contacts.list.side_effect = LektoConnectionError("refused")
+
+    response = await _call(hass, loaded, "list_documents", fields=["lane", "contact"])
+
+    assert response["documents"][0]["lane"] is None
+    assert response["documents"][0]["contact"] is None
