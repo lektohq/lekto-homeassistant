@@ -1,7 +1,7 @@
 # Use cases and examples
 
 What a household does with Lekto in Home Assistant, and an automation for each. The entity ids are
-those of an instance set up under the name **Lekto**; the `config_entry_id` of an action is the id
+those of the first instance (a second one gets `_2`); the `config_entry_id` of an action is the id
 of your entry (in the action editor, pick the instance and switch to YAML to see it).
 
 ## Know when the inbox needs you
@@ -16,6 +16,7 @@ automation:
       - trigger: state
         entity_id: sensor.lekto_inbox_worst_lane
         to: red
+        not_from: [unavailable, unknown]
     actions:
       - action: notify.notify
         data:
@@ -34,6 +35,8 @@ automation:
     triggers:
       - trigger: state
         entity_id: event.lekto_document
+        # A restart restores the last event; it is no new one.
+        not_from: [unavailable, unknown]
     conditions:
       - condition: state
         entity_id: event.lekto_document
@@ -48,9 +51,9 @@ automation:
 
 ## Send a scan to Lekto
 
-A scanner that saves into Home Assistant's media folder `scans` hands each new file to Lekto with
-the action [`lekto.upload`](actions.md#lektoupload), for example from a script the scanner's
-button starts:
+A scanner that saves into Home Assistant's media folder `scans` can hand a file to Lekto with the
+action [`lekto.upload`](actions.md#lektoupload) (needs `documents:upload`), for example from a
+script that gets the file's name:
 
 ```yaml
 script:
@@ -104,14 +107,16 @@ script:
       - action: notify.notify
         data:
           message: >-
-            {% for document in waiting.documents %}{{ document.title }}
-            {% else %}Nothing waits in Lekto.{% endfor %}
+            {{ waiting.documents | map(attribute='title') | join(', ')
+               or 'Nothing waits in Lekto.' }}
 ```
 
 ## Keep Lekto healthy
 
 The diagnostic sensors **Health**, **Jobs failed** and **Jobs waiting** tell when Lekto itself has
-trouble, and the [update entity](sensors.md#update) when a new release is out:
+trouble, and the [update entity](sensors.md#update) when a new release is out. **Health** is
+`down` when Lekto answers but a service it needs failed, and unavailable when Lekto does not
+answer at all:
 
 ```yaml
 automation:
@@ -119,10 +124,10 @@ automation:
     triggers:
       - trigger: state
         entity_id: sensor.lekto_health
-        to: down
+        to: [down, unavailable]
         for: "00:10:00"
     actions:
       - action: notify.notify
         data:
-          message: Lekto has been down for ten minutes.
+          message: Lekto has been down or unreachable for ten minutes.
 ```
