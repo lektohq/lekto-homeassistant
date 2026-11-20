@@ -21,7 +21,7 @@ from pylekto import (
 from .capabilities import Capability, capabilities, missing_rights
 from .const import DOMAIN, REQUIRED_RIGHTS
 from .coordinator import LektoConfigEntry, LektoCoordinator
-from .repairs import note_capabilities
+from .repairs import note_issues
 from .services import async_setup_services
 from .stream import listen
 
@@ -82,7 +82,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
             translation_placeholders={"rights": ", ".join(missing)},
         )
     given = capabilities(me.rights)
-    note_capabilities(hass, entry, given)
+    note_issues(hass, entry, me, given)
     coordinator = LektoCoordinator(hass, entry, client, me, given)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator

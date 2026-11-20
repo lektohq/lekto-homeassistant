@@ -1,4 +1,4 @@
-"""Repairs of the Lekto integration: a capability the token lost."""
+"""Repairs of the Lekto integration: a capability the token lost, another version of the API."""
 
 from typing import TYPE_CHECKING, Any
 
@@ -6,6 +6,7 @@ import probatio
 from homeassistant.components.repairs import RepairsFlow
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
+from pylekto import API_VERSION, api_fit
 
 from .capabilities import ENTITY_KEYS, RIGHTS, Capability
 from .const import CONF_CAPABILITIES, DOMAIN
@@ -14,16 +15,20 @@ if TYPE_CHECKING:
     from homeassistant.components.repairs import RepairsFlowResult
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
+    from pylekto.models import Me
 
 
 def _issue_id(entry: ConfigEntry, capability: Capability) -> str:
     return f"{entry.entry_id}_{capability}_lost"
 
 
-def note_capabilities(
-    hass: HomeAssistant, entry: ConfigEntry, given: frozenset[Capability]
+def note_issues(
+    hass: HomeAssistant, entry: ConfigEntry, me: Me, given: frozenset[Capability]
 ) -> None:
-    """Raise a repair for each capability the entry had and the token lost, and keep the rest."""
+    """Raise the repairs of a setup: each capability the token lost, and an API that may not fit.
+
+    Every repair of the entry is raised here, as the refresh removes those it does not see again.
+    """
     # An entry from before capabilities were kept knows only what it has now.
     stored: list[str] = entry.data.get(CONF_CAPABILITIES, [str(c) for c in given])
     # A value of another version stays, so that version still knows it after a downgrade.
@@ -42,6 +47,24 @@ def note_capabilities(
                 translation_key=f"{capability}_lost",
                 translation_placeholders=_placeholders(entry, capability),
                 data={"entry_id": entry.entry_id, "capability": str(capability)},
+            )
+        fit = api_fit(me.api_version)
+        # The integration goes on: much of the API may still work, and the repair says what to do.
+        if fit != "fits":
+            ir.async_create_issue(
+                hass,
+                DOMAIN,
+                f"{entry.entry_id}_api_version",
+                config_entry_id=entry.entry_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key=f"api_{fit}",
+                translation_placeholders={
+                    "name": entry.title,
+                    "lekto_version": me.lekto_version,
+                    "api_version": me.api_version,
+                    "integration_api": API_VERSION,
+                },
             )
     if entry.data.get(CONF_CAPABILITIES) != kept:
         hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_CAPABILITIES: kept})
