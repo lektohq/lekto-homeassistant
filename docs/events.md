@@ -47,6 +47,8 @@ automation:
     triggers:
       - trigger: state
         entity_id: event.lekto_document
+        # A restart restores the last event; it is no new one.
+        not_from: [unavailable, unknown]
     conditions:
       - condition: state
         entity_id: event.lekto_document
