@@ -30,8 +30,8 @@
   "has_password": true,
   "totp_enabled": false,
   "linked_accounts": [],
-  "lekto_version": "0.16.0",
-  "api_version": "0.2",
+  "lekto_version": "0.17.0",
+  "api_version": "0.3",
   "instance_id": "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1d00",
   "shortcut_url": null
 }

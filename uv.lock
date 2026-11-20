@@ -1500,7 +1500,7 @@ dev = [
     { name = "covdefaults", specifier = ">=2.3.0" },
     { name = "mypy", specifier = ">=2.4.1" },
     { name = "prek", specifier = ">=0.5.9" },
-    { name = "pylekto", specifier = ">=0.3.0" },
+    { name = "pylekto", specifier = ">=0.4.0" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-homeassistant", specifier = ">=2026.11.0" },
     { name = "ruff", specifier = ">=0.17.3" },
@@ -2301,15 +2301,15 @@ crypto = [
 
 [[package]]
 name = "pylekto"
-version = "0.3.0"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx2" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/5c/366d54ef9b2822a77eacaa18c6b4052c74f907786b61d5ca6a53b529e858/pylekto-0.3.0.tar.gz", hash = "sha256:58ad100b59c8bbb57b8ea9d66b4ca892c4257a3b828d8812b03ac1f59500cec3", size = 102229, upload-time = "2026-11-20T10:33:27.014Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/93/2dad8e61a7b26afbac8f37f2f95a57fd076c3111ecea7c00ef282e52276c/pylekto-0.4.0.tar.gz", hash = "sha256:c0465175dc64024fab19baf96662005642611c5a5e03819ee7c70d4d4c9f41af", size = 102496, upload-time = "2026-11-20T14:51:17.512Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/f3/dbd30ea7e6298d99e60c79db47d1e57b74e111a587e9fccbea861b28f3d5/pylekto-0.3.0-py3-none-any.whl", hash = "sha256:88c2afeee1d23a7ac7920643715f2f7cfb492c4d1ecd2ad21d6e40c6bfb45787", size = 112942, upload-time = "2026-11-20T10:33:25.489Z" },
+    { url = "https://files.pythonhosted.org/packages/23/f8/6fd9ccfc2b47745f328924ea1af9d92673083ba8627d4051fabb0da6034e/pylekto-0.4.0-py3-none-any.whl", hash = "sha256:4dee6e80d8cf7b3a6270a4ac46b53594ba7b0d933491f5aece60339f8217be0a", size = 113265, upload-time = "2026-11-20T14:51:16.323Z" },
 ]
 
 [[package]]

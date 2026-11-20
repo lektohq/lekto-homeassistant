@@ -44,8 +44,8 @@ async def test_diagnostics(
     for secret in (TOKEN, URL, INSTANCE_ID, "homeassistant", "Home Assistant"):
         assert secret not in text, secret
     assert diagnostics["lekto"] == {
-        "lekto_version": "0.16.0",
-        "api_version": "0.2",
+        "lekto_version": "0.17.0",
+        "api_version": "0.3",
         "capabilities": ["diagnostics", "documents", "events", "mail", "names", "spaces", "upload"],
         "rights": [
             "admin:count_all",
@@ -72,9 +72,9 @@ async def test_diagnostics(
     version = data["version"]
     assert isinstance(version, dict)
     assert version["latest"] == {
-        "version": "0.17.0",
+        "version": "0.18.0",
         "published_at": "2026-11-18T12:00:00Z",
-        "url": "https://releases.example.com/lekto/v0.17.0",
+        "url": "https://releases.example.com/lekto/v0.18.0",
     }
 
 

@@ -54,7 +54,7 @@ async def test_repair(
     assert issue.config_entry_id == config_entry.entry_id
     assert issue.translation_placeholders == {
         "name": "Lekto",
-        "lekto_version": "0.16.0",
+        "lekto_version": "0.17.0",
         "api_version": api_version,
         "integration_api": API_VERSION,
     }
