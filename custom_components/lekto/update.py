@@ -15,6 +15,10 @@ if TYPE_CHECKING:
     from .coordinator import LektoConfigEntry, LektoCoordinator
 
 
+# The coordinator fetches the versions with the numbers.
+PARALLEL_UPDATES = 0
+
+
 async def async_setup_entry(
     _hass: HomeAssistant,
     entry: LektoConfigEntry,

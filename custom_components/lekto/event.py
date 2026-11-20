@@ -27,6 +27,9 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Lekto's stream pushes the events; the entity never polls.
+PARALLEL_UPDATES = 0
+
 EVENT_TYPES: Final = {
     "document.received": "received",
     "document.filed": "filed",

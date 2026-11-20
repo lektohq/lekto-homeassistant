@@ -7,6 +7,9 @@ A [Home Assistant](https://www.home-assistant.io/) integration for the
 > [!NOTE]
 > The integration is in beta: it reports the numbers of the household's documents, reacts to new
 > documents, starts actions in Lekto and tells when a new release of Lekto is out.
+> It meets every rule of Home Assistant's
+> [quality scale](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
+> up to Platinum.
 
 The documentation is in [`docs/`](docs/README.md): [installation](docs/installation.md),
 [setup](docs/setup.md), [sensors and update](docs/sensors.md), [document event](docs/events.md),
