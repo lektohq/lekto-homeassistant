@@ -74,7 +74,7 @@
             }
           },
           "lane": {
-            "name": "Spur",
+            "name": "Lane",
             "state": {
               "yellow": "Prüfen",
               "red": "Eingreifen"
@@ -123,7 +123,7 @@
         "name": "Posteingang prüfen"
       },
       "inbox_worst_lane": {
-        "name": "Posteingang schlimmste Spur",
+        "name": "Posteingang schlimmste Lane",
         "state": {
           "green": "Neu",
           "yellow": "Prüfen",
@@ -259,7 +259,7 @@
   "selector": {
     "document_fields": {
       "options": {
-        "lane": "Spur",
+        "lane": "Lane",
         "contact": "Kontakt",
         "document_type": "Dokumenttyp",
         "tags": "Tags",
@@ -295,8 +295,8 @@
           "description": "Die Lekto-Instanz, die gefragt wird."
         },
         "lane": {
-          "name": "Spur",
-          "description": "Nur Dokumente in diesen Spuren."
+          "name": "Lane",
+          "description": "Nur Dokumente in diesen Lanes."
         },
         "contact": {
           "name": "Kontakt",
@@ -347,8 +347,8 @@
           "description": "Die Lekto-Instanz, die gefragt wird."
         },
         "lane": {
-          "name": "Spur",
-          "description": "Nur Dokumente in diesen Spuren."
+          "name": "Lane",
+          "description": "Nur Dokumente in diesen Lanes."
         },
         "contact": {
           "name": "Kontakt",
