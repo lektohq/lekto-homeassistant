@@ -16,10 +16,11 @@ from pylekto import (
     LektoServerError,
 )
 
-from .const import DOMAIN, REQUIRED_RIGHTS
+from .capabilities import Capability, capabilities, missing_rights
+from .const import DOMAIN
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Callable
 
     from homeassistant.core import HomeAssistant
     from pylekto import LektoClient
@@ -44,7 +45,7 @@ class LektoData:
     inbox: InboxSummaryOut
     documents: int
     health: Health
-    jobs: JobsSummaryOut
+    jobs: JobsSummaryOut | None
     search: SearchStatusOut | None
     classifier: ClassifierStatusOut | None
 
@@ -55,7 +56,12 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
     config_entry: LektoConfigEntry
 
     def __init__(
-        self, hass: HomeAssistant, config_entry: LektoConfigEntry, client: LektoClient, me: Me
+        self,
+        hass: HomeAssistant,
+        config_entry: LektoConfigEntry,
+        client: LektoClient,
+        me: Me,
+        given: frozenset[Capability],
     ) -> None:
         """Keep the client and what Lekto said about itself when it connected."""
         super().__init__(
@@ -70,29 +76,48 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
         self.lekto_version = me.lekto_version
         self.api_version = me.api_version
         self.rights = sorted(me.rights)
+        self.capabilities = given
+        self._reloading = False
+
+    async def reload_if_rights_changed(self) -> None:
+        """Set the entry up again when Lekto names other rights than at setup.
+
+        A refused request alone does not tell; reloading on it could loop.
+        """
+        # The stream and the numbers may both be refused at once; one reload is enough.
+        if self._reloading:
+            return
+        try:
+            me = await self.client.auth.me()
+        except LektoError:
+            return
+        if missing_rights(me.rights) or capabilities(me.rights) != self.capabilities:
+            self._reloading = True
+            self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
 
     @override
     async def _async_update_data(self) -> LektoData:
         """Fetch the inbox's summary, the count of documents and the state of the services."""
+        diagnostics = Capability.DIAGNOSTICS in self.capabilities
         try:
             inbox, count, health, jobs, search, classifier = await asyncio.gather(
                 self.client.inbox.summary(all_users=True),
                 self.client.documents.count(all_users=True),
                 self.client.health.get(),
-                self.client.jobs.summary(),
-                _unless_missing(self.client.search.status()),
-                _unless_missing(self.client.classifier.status()),
+                _if(self.client.jobs.summary, wanted=diagnostics),
+                _if(lambda: _unless_missing(self.client.search.status()), wanted=diagnostics),
+                _if(lambda: _unless_missing(self.client.classifier.status()), wanted=diagnostics),
             )
         except LektoAuthenticationError as err:
             raise ConfigEntryAuthFailed(
                 translation_domain=DOMAIN, translation_key="invalid_auth"
             ) from err
-        # A right taken from the token, or an admin who is no admin anymore, refuses a request.
         except LektoForbiddenError as err:
-            raise ConfigEntryAuthFailed(
+            await self.reload_if_rights_changed()
+            raise UpdateFailed(
                 translation_domain=DOMAIN,
-                translation_key="missing_rights",
-                translation_placeholders={"rights": ", ".join(sorted(REQUIRED_RIGHTS))},
+                translation_key="update_failed",
+                translation_placeholders={"error": str(err)},
             ) from err
         except LektoError as err:
             raise UpdateFailed(
@@ -116,3 +141,8 @@ async def _unless_missing[T](request: Awaitable[T]) -> T | None:
         return await request
     except LektoServerError:
         return None
+
+
+async def _if[T](request: Callable[[], Awaitable[T]], *, wanted: bool) -> T | None:
+    """Without the right a request would only be refused, so it is not sent."""
+    return await request() if wanted else None

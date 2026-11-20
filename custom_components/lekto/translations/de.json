@@ -17,7 +17,7 @@
           "api_token": "API-Token"
         },
         "data_description": {
-          "api_token": "Ein neues Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}."
+          "api_token": "Ein neues Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}. Weitere Rechte öffnen weitere Funktionen; die Dokumentation nennt sie."
         },
         "description": "Lekto lehnt das Token ab, oder ihm fehlen Rechte. Ein neues eintragen.",
         "title": "Neues Token für {name}"
@@ -41,7 +41,7 @@
           "verify_ssl": "SSL-Zertifikat überprüfen"
         },
         "data_description": {
-          "api_token": "Ein Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}.",
+          "api_token": "Ein Token, das ein Admin in den Einstellungen von Lekto für Home Assistant angelegt hat. Nötig sind {rights}. Weitere Rechte öffnen weitere Funktionen; die Dokumentation nennt sie.",
           "url": "Die Adresse der Weboberfläche von Lekto, etwa {example_url}.",
           "verify_ssl": "Nur für ein selbst signiertes Zertifikat ausschalten."
         },
@@ -144,6 +144,54 @@
     },
     "wrong_instance": {
       "message": "Die Adresse führt zu einer anderen Lekto-Instanz als der eingerichteten. Den Eintrag mit der richtigen Adresse neu konfigurieren."
+    }
+  },
+  "issues": {
+    "diagnostics_lost": {
+      "fix_flow": {
+        "abort": {
+          "issue_gone": "Die Rechte sind zurück; nichts zu entfernen.",
+          "reauth_started": "Ein neues Token ist angefragt; die Reparatur verschwindet, sobald ein Token mit den Rechten eingerichtet ist."
+        },
+        "step": {
+          "init": {
+            "title": "Lekto ({name}): Diagnose-Sensoren aus",
+            "description": "Dem Token von Lekto fehlt das Recht {rights}, darum sind die Sensoren zu Jobs, Suchindex und Klassifikator aus. Ein neues Token mit den Rechten eintragen, oder die Entitäten entfernen, die mit ihnen weggefallen sind.",
+            "menu_options": {
+              "new_token": "Neues Token eintragen",
+              "remove_entities": "Entitäten entfernen"
+            }
+          },
+          "remove_entities": {
+            "title": "Entitäten entfernen",
+            "description": "Die Entitäten, die die Rechte brauchen, aus Home Assistant entfernen. Die Reparatur kommt nicht wieder; ein neues Token mit den Rechten bringt sie zurück."
+          }
+        }
+      },
+      "title": "Lekto ({name}): Diagnose-Sensoren aus"
+    },
+    "events_lost": {
+      "fix_flow": {
+        "abort": {
+          "issue_gone": "Die Rechte sind zurück; nichts zu entfernen.",
+          "reauth_started": "Ein neues Token ist angefragt; die Reparatur verschwindet, sobald ein Token mit den Rechten eingerichtet ist."
+        },
+        "step": {
+          "init": {
+            "title": "Lekto ({name}): Dokument-Ereignisse aus",
+            "description": "Dem Token von Lekto fehlen die Rechte {rights}, darum sind das Dokument-Ereignis und das Aktualisieren der Zahlen bei jedem Ereignis aus. Ein neues Token mit den Rechten eintragen, oder die Entitäten entfernen, die mit ihnen weggefallen sind.",
+            "menu_options": {
+              "new_token": "Neues Token eintragen",
+              "remove_entities": "Entitäten entfernen"
+            }
+          },
+          "remove_entities": {
+            "title": "Entitäten entfernen",
+            "description": "Die Entitäten, die die Rechte brauchen, aus Home Assistant entfernen. Die Reparatur kommt nicht wieder; ein neues Token mit den Rechten bringt sie zurück."
+          }
+        }
+      },
+      "title": "Lekto ({name}): Dokument-Ereignisse aus"
     }
   }
 }

@@ -17,12 +17,14 @@ from pylekto import (
     LektoResponseError,
 )
 
+from .capabilities import Capability, capabilities, missing_rights
 from .const import DOMAIN, REQUIRED_RIGHTS
 from .coordinator import LektoConfigEntry, LektoCoordinator
+from .repairs import note_capabilities
 from .stream import listen
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Mapping
 
     from homeassistant.core import HomeAssistant
 
@@ -36,11 +38,6 @@ def create_client(hass: HomeAssistant, data: Mapping[str, Any]) -> LektoClient:
         data[CONF_API_TOKEN],
         client=get_async_client(hass, verify_ssl=data[CONF_VERIFY_SSL]),
     )
-
-
-def missing_rights(rights: Iterable[str]) -> list[str]:
-    """Return the rights Home Assistant needs that ``rights`` lack, sorted."""
-    return sorted(REQUIRED_RIGHTS.difference(rights))
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> None:
@@ -73,11 +70,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
             translation_key="missing_rights",
             translation_placeholders={"rights": ", ".join(missing)},
         )
-    coordinator = LektoCoordinator(hass, entry, client, me)
+    given = capabilities(me.rights)
+    note_capabilities(hass, entry, given)
+    coordinator = LektoCoordinator(hass, entry, client, me, given)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_create_background_task(hass, listen(hass, entry), f"{DOMAIN} event stream")
+    if Capability.EVENTS in given:
+        entry.async_create_background_task(hass, listen(hass, entry), f"{DOMAIN} event stream")
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> None:

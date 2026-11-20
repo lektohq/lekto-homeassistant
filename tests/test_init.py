@@ -63,7 +63,7 @@ async def test_setup_and_unload(
             (
                 ConfigEntryState.SETUP_ERROR,
                 "missing_rights",
-                {"rights": "admin:count_all, admin:documents_all, documents:read, system:read"},
+                {"rights": "admin:count_all, documents:count"},
             ),
         ),
         (
@@ -102,10 +102,7 @@ async def test_setup_error(
         (me(instance_id="0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1dff"), ("wrong_instance", None)),
         (
             me(rights=["documents:count"]),
-            (
-                "missing_rights",
-                {"rights": "admin:count_all, admin:documents_all, documents:read, system:read"},
-            ),
+            ("missing_rights", {"rights": "admin:count_all"}),
         ),
     ],
 )

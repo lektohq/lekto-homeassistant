@@ -17,7 +17,7 @@
           "api_token": "API token"
         },
         "data_description": {
-          "api_token": "A new token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}."
+          "api_token": "A new token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}. More rights open more functions; the documentation lists them."
         },
         "description": "Lekto refuses the token, or it lacks rights. Enter a new one.",
         "title": "New token for {name}"
@@ -41,7 +41,7 @@
           "verify_ssl": "Verify SSL certificate"
         },
         "data_description": {
-          "api_token": "A token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}.",
+          "api_token": "A token made for Home Assistant in Lekto's settings, by an admin. It needs {rights}. More rights open more functions; the documentation lists them.",
           "url": "The address of Lekto's web interface, such as {example_url}.",
           "verify_ssl": "Turn off only for a self-signed certificate."
         },
@@ -144,6 +144,54 @@
     },
     "wrong_instance": {
       "message": "The address leads to another Lekto instance than the one set up. Reconfigure the entry with the right address."
+    }
+  },
+  "issues": {
+    "diagnostics_lost": {
+      "fix_flow": {
+        "abort": {
+          "issue_gone": "The rights are back; nothing to remove.",
+          "reauth_started": "A new token was asked for; the repair goes once a token with the rights is set up."
+        },
+        "step": {
+          "init": {
+            "title": "Lekto ({name}): diagnostic sensors off",
+            "description": "Lekto's token no longer has the right {rights}, so the sensors of Lekto's jobs, search index and classifier are off. Enter a new token that has the rights, or remove the entities that are gone with them.",
+            "menu_options": {
+              "new_token": "Enter a new token",
+              "remove_entities": "Remove the entities"
+            }
+          },
+          "remove_entities": {
+            "title": "Remove the entities",
+            "description": "Remove the entities that need the rights from Home Assistant. The repair does not come back; a new token with the rights brings them back."
+          }
+        }
+      },
+      "title": "Lekto ({name}): diagnostic sensors off"
+    },
+    "events_lost": {
+      "fix_flow": {
+        "abort": {
+          "issue_gone": "The rights are back; nothing to remove.",
+          "reauth_started": "A new token was asked for; the repair goes once a token with the rights is set up."
+        },
+        "step": {
+          "init": {
+            "title": "Lekto ({name}): document events off",
+            "description": "Lekto's token no longer has the rights {rights}, so the document event and the update of the numbers on each event are off. Enter a new token that has the rights, or remove the entities that are gone with them.",
+            "menu_options": {
+              "new_token": "Enter a new token",
+              "remove_entities": "Remove the entities"
+            }
+          },
+          "remove_entities": {
+            "title": "Remove the entities",
+            "description": "Remove the entities that need the rights from Home Assistant. The repair does not come back; a new token with the rights brings them back."
+          }
+        }
+      },
+      "title": "Lekto ({name}): document events off"
     }
   }
 }
