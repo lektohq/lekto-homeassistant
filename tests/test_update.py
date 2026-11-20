@@ -68,6 +68,20 @@ async def test_up_to_date(
     assert state.attributes["release_url"] is None
 
 
+async def test_updated_before_next_look(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """Updated in place, Lekto still names the release it found; it is installed, so no link."""
+    lekto.version.get.return_value = version(update_available=False)
+
+    await _set_up(hass, config_entry)
+
+    state = hass.states.get(UPDATE)
+    assert state is not None
+    assert state.state == STATE_OFF
+    assert state.attributes["release_url"] is None
+
+
 @pytest.mark.parametrize(
     "changes",
     [
@@ -122,8 +136,25 @@ async def test_lekto_updated(
 
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:
         await _next_update(hass, freezer)
+        await _next_update(hass, freezer)
 
     reload.assert_called_once_with(config_entry.entry_id)
+
+
+async def test_other_version_than_at_setup(
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Replicas of two versions behind one address do not reload the entry again and again."""
+    lekto.version.get.return_value = version(lekto_version="0.17.0")
+
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await _set_up(hass, config_entry)
+        await _next_update(hass, freezer)
+
+    reload.assert_not_called()
 
 
 @pytest.mark.usefixtures("lekto")

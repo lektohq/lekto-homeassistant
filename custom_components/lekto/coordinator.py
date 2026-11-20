@@ -126,8 +126,16 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
                 translation_key="update_failed",
                 translation_placeholders={"error": str(err)},
             ) from err
-        # A Lekto updated in place may speak another API; setting up again checks it.
-        if version is not None and version.lekto_version != self.lekto_version:
+        # A Lekto updated in place may speak another API; setting up again checks it. Only a
+        # change between two answers counts, so replicas of two versions cannot reload in a loop.
+        before = self.data.version if self.data else None
+        if (
+            version is not None
+            and before is not None
+            and version.lekto_version != before.lekto_version
+            and not self._reloading
+        ):
+            self._reloading = True
             self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
         return LektoData(
             inbox=inbox,

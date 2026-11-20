@@ -58,6 +58,8 @@ class LektoUpdate(LektoEntity, UpdateEntity):
     @property
     @override
     def release_url(self) -> str | None:
-        """Return the page of the newest release."""
+        """Return the page of the newest release, while it is not the one installed."""
         version = self.coordinator.data.version
-        return version.latest.url if version and version.latest else None
+        if version is None or not version.update_available or version.latest is None:
+            return None
+        return version.latest.url

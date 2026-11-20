@@ -69,6 +69,13 @@ async def test_diagnostics(
     inbox = data["inbox"]
     assert isinstance(inbox, dict)
     assert inbox["worst_lane"] == "red"
+    version = data["version"]
+    assert isinstance(version, dict)
+    assert version["latest"] == {
+        "version": "0.17.0",
+        "published_at": "2026-11-18T12:00:00Z",
+        "url": "https://releases.example.com/lekto/v0.17.0",
+    }
 
 
 async def test_diagnostics_without_search(

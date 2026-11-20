@@ -38,6 +38,7 @@ DIAGNOSTIC_SENSORS = [
     "sensor.lekto_jobs_failed",
     "sensor.lekto_jobs_waiting",
     "sensor.lekto_search_index_waiting",
+    "update.lekto",
 ]
 FORBIDDEN = LektoForbiddenError(Problem(title="Forbidden", status=403))
 
