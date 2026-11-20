@@ -1,8 +1,8 @@
 # Actions
 
-The integration offers actions for scripts and automations. Each names the Lekto instance it runs
-on (`config_entry_id`) and needs rights of its own ([setup](setup.md)); an action whose rights the
-token lacks fails and names them.
+The integration offers actions for scripts and automations: upload a file, fetch the mailboxes,
+count and list documents. Each names the Lekto instance it runs on (`config_entry_id`) and needs
+rights of its own ([setup](setup.md)); an action whose rights the token lacks fails and names them.
 
 ## `lekto.upload`
 
@@ -40,3 +40,59 @@ Has Lekto fetch its mailboxes now instead of at their next interval.
 
 Needs `system:read`, `system:write` and `admin:mailboxes`. The response lists the mailboxes asked
 to fetch (`mailboxes`); Lekto fetches them in the background.
+
+## Filters
+
+`lekto.count` and `lekto.list_documents` take the same filters; a filter left empty takes all,
+and several filters narrow each other. They cover the whole household.
+
+| Field | Meaning |
+| --- | --- |
+| `lane` | Only documents in these lanes: `green` (went through or was resolved; in the inbox such a document shows as new), `yellow` (review), `red` (action needed), `processing` |
+| `contact` | Only documents of these contacts, by name; needs `master_data:read` |
+| `document_type` | Only documents of these types, by name; needs `master_data:read` |
+| `tag` | Only documents with any of these tags, by name; needs `master_data:read` |
+| `space` | Only documents in these spaces, by name; needs `spaces:read` with `admin:documents_all` |
+| `date_from`, `date_to` | Only documents dated within these days |
+
+Names are compared without regard to case; a name several contacts share takes all of them, a
+name Lekto does not know fails the action. There is no filter for the inbox yet: Lekto cannot
+filter by it.
+
+## `lekto.count`
+
+Counts the household's documents that match the filters. Needs only the rights every token has.
+The response holds `count`.
+
+```yaml
+action: lekto.count
+data:
+  config_entry_id: 0123456789abcdef0123456789abcdef
+  lane: [red]
+  document_type: Invoice
+response_variable: invoices
+```
+
+## `lekto.list_documents`
+
+Lists the household's documents that match the filters, newest first by when they came into Lekto;
+`date` is the document's own date, which the date filters use. Needs `documents:read` and
+`admin:documents_all`.
+
+| Field | Meaning |
+| --- | --- |
+| `limit` | How many documents at most, 1 to 50; 10 if empty |
+| `fields` | What each document carries beside `id`, `title`, `date` and `url`: `lane` (empty while Lekto processes the document), `contact`, `document_type`, `tags` (these three need `master_data:read`), `space` (needs `spaces:read` with `admin:documents_all`) |
+
+The response holds `documents`, newest first. A name is empty when the token lacks its right or
+Lekto cannot give it at the moment; a filter by name fails then.
+
+```yaml
+action: lekto.list_documents
+data:
+  config_entry_id: 0123456789abcdef0123456789abcdef
+  lane: [red, yellow]
+  limit: 3
+  fields: [contact]
+response_variable: waiting
+```
