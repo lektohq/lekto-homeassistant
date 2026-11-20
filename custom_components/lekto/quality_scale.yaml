@@ -31,9 +31,7 @@ rules:
     status: todo
     comment: The actions come with point 13 of the plan.
   config-entry-unloading: done
-  docs-configuration-parameters:
-    status: exempt
-    comment: The integration has no options flow.
+  docs-configuration-parameters: done
   docs-installation-parameters: done
   entity-unavailable: done
   integration-owner: done

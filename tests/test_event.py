@@ -2,18 +2,23 @@
 
 import asyncio
 from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock, MagicMock
+from uuid import UUID
 
 import pytest
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
-from homeassistant.core import State
+from homeassistant.core import Event, EventStateChangedData, State, callback
+from homeassistant.helpers.event import async_track_state_change_event
 from pylekto import LektoConnectionError
 from pytest_homeassistant.common import mock_restore_cache_with_extra_data
 
-from .const import DOCUMENT_ID, event, streams
+from custom_components.lekto.const import CONF_EVENT_FIELDS, EVENT_FIELDS
+from custom_components.lekto.event import LektoDocumentEvent, document_fields
+
+from .const import DOCUMENT_ID, document, event, me, streams
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
-    from unittest.mock import MagicMock
 
     from homeassistant.core import HomeAssistant
     from pylekto.models import EventMessage
@@ -157,3 +162,135 @@ async def test_restored(
     assert state.attributes["event_type"] == "review_required"
     assert state.attributes["lane"] == "red"
     assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+async def _set_up_with_fields(
+    hass: HomeAssistant, config_entry: MockConfigEntry, fields: list[str]
+) -> None:
+    config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(config_entry, options={CONF_EVENT_FIELDS: fields})
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+
+async def test_fields(hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry) -> None:
+    """Picked fields come from the document and Lekto's names; unknown tags are left out."""
+    lekto.events.listen.side_effect = streams([event("document.received")])
+
+    await _set_up_with_fields(hass, config_entry, list(EVENT_FIELDS))
+
+    state = hass.states.get(ENTITY_ID)
+    assert state is not None
+    assert {name: state.attributes.get(name) for name in EVENT_FIELDS} == {
+        "title": "Electricity bill November",
+        "document_date": "2026-11-03",
+        "contact": "Example Energy",
+        "document_type": "Invoice",
+        "tags": ["Car"],
+        "space": "Household",
+    }
+    assert state.attributes["document_id"] == DOCUMENT_ID
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+async def test_no_fields_no_request(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """Without picked fields the document is not fetched."""
+    lekto.events.listen.side_effect = streams([event("document.received")])
+
+    await _set_up_with_fields(hass, config_entry, [])
+
+    lekto.documents.get.assert_not_called()
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+async def test_fields_unavailable(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """A document Lekto cannot give, or a name it cannot give, leaves the fields out."""
+    lekto.events.listen.side_effect = streams([event("document.received"), event("document.filed")])
+    lekto.documents.get.side_effect = [
+        LektoConnectionError("refused"),
+        document(document_date=None, contact_id=None),
+    ]
+    lekto.document_types.list.side_effect = LektoConnectionError("refused")
+
+    await _set_up_with_fields(hass, config_entry, list(EVENT_FIELDS))
+
+    state = hass.states.get(ENTITY_ID)
+    assert state is not None
+    assert state.attributes["event_type"] == "filed"
+    assert {name for name in EVENT_FIELDS if name in state.attributes} == {
+        "title",
+        "tags",
+        "space",
+    }
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+async def test_fields_without_names(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """Without the rights to list names, the named fields are left out."""
+    rights = [r for r in me().rights if r not in {"master_data:read", "spaces:read"}]
+    lekto.connect.return_value = me(rights=rights)
+    lekto.events.listen.side_effect = streams([event("document.received")])
+
+    await _set_up_with_fields(hass, config_entry, list(EVENT_FIELDS))
+
+    state = hass.states.get(ENTITY_ID)
+    assert state is not None
+    assert {name for name in EVENT_FIELDS if name in state.attributes} == {
+        "title",
+        "document_date",
+    }
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+def test_fields_not_recorded() -> None:
+    """Titles and names stay out of the recorder's history."""
+    assert LektoDocumentEvent._unrecorded_attributes >= set(EVENT_FIELDS)
+
+
+async def test_fields_keep_order(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """An event whose document comes slowly still goes before the next one."""
+    first_done = asyncio.Event()
+    fired: list[str] = []
+
+    async def get(_document_id: object) -> object:
+        if not first_done.is_set():
+            first_done.set()
+            await asyncio.sleep(0)
+            return document(title="First")
+        return document(title="Second")
+
+    lekto.documents.get.side_effect = get
+    lekto.events.listen.side_effect = streams([event("document.received"), event("document.filed")])
+
+    @callback
+    def changed(change: Event[EventStateChangedData]) -> None:
+        state = change.data["new_state"]
+        if state is not None and "title" in state.attributes:
+            fired.append(state.attributes["title"])
+
+    async_track_state_change_event(hass, ENTITY_ID, changed)
+
+    await _set_up_with_fields(hass, config_entry, ["title"])
+
+    assert fired == ["First", "Second"]
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+async def test_fields_name_unavailable() -> None:
+    """A name Lekto cannot give at the moment is left out."""
+    coordinator = MagicMock()
+    coordinator.client.documents.get = AsyncMock(return_value=document())
+    coordinator.names.may.return_value = True
+    coordinator.names.name = AsyncMock(side_effect=LektoConnectionError("refused"))
+
+    fields = await document_fields(coordinator, UUID(DOCUMENT_ID), ["contact", "tags"])
+
+    assert fields == {"tags": []}
