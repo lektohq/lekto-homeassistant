@@ -10,7 +10,9 @@ A [Home Assistant](https://www.home-assistant.io/) integration for the
 
 The documentation is in [`docs/`](docs/README.md): [installation](docs/installation.md),
 [setup](docs/setup.md), [sensors and update](docs/sensors.md), [document event](docs/events.md),
-[actions](docs/actions.md), [diagnostics](docs/diagnostics.md), [removal](docs/removal.md).
+[actions](docs/actions.md), [use cases](docs/use-cases.md), [limitations](docs/limitations.md),
+[troubleshooting](docs/troubleshooting.md), [diagnostics](docs/diagnostics.md),
+[removal](docs/removal.md).
 
 ## Development
 

@@ -3,15 +3,19 @@
 The integration brings [Lekto](https://github.com/lektohq/lekto), a self-hosted document
 management system, into Home Assistant. It reports the numbers of the household's documents,
 such as how many wait in the inbox, reacts to new documents, starts actions in Lekto and tells
-when a new release of Lekto is out. It talks to Lekto's REST API
-through [pylekto](https://github.com/lektohq/pylekto), in the local network; nothing leaves it.
+when a new release of Lekto is out. It talks to Lekto's REST API through
+[pylekto](https://github.com/lektohq/pylekto), in the local network; nothing leaves it.
 
 One entry sets up one Lekto instance, with an API token made for Home Assistant.
 
+- [Use cases and examples](use-cases.md): automations for the inbox, new documents, scans, mail
+- [Supported versions and functions](supported.md)
 - [Installation](installation.md)
 - [Setup](setup.md): the token and its rights, the parameters
 - [Sensors](sensors.md): what they count, and the update of Lekto
 - [Document event](events.md): for automations
 - [Actions](actions.md): upload a file, fetch the mailboxes, count and list documents
 - [Diagnostics](diagnostics.md): what the file for a problem report holds
+- [Known limitations](limitations.md)
+- [Troubleshooting](troubleshooting.md): setup errors, repairs, the debug log
 - [Removal](removal.md)
