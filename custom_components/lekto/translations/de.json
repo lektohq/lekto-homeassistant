@@ -54,8 +54,17 @@
       "document": {
         "name": "Dokument",
         "state_attributes": {
+          "contact": {
+            "name": "Kontakt"
+          },
+          "document_date": {
+            "name": "Datum"
+          },
           "document_id": {
             "name": "Dokument-ID"
+          },
+          "document_type": {
+            "name": "Dokumenttyp"
           },
           "event_type": {
             "state": {
@@ -70,6 +79,15 @@
               "yellow": "Prüfen",
               "red": "Eingreifen"
             }
+          },
+          "space": {
+            "name": "Space"
+          },
+          "tags": {
+            "name": "Tags"
+          },
+          "title": {
+            "name": "Titel"
           }
         }
       }
@@ -192,6 +210,35 @@
         }
       },
       "title": "Lekto ({name}): Dokument-Ereignisse aus"
+    }
+  },
+  "options": {
+    "abort": {
+      "no_events": "Dem Token fehlen die Rechte des Dokument-Ereignisses (documents:read und admin:documents_all), darum gibt es nichts zu wählen."
+    },
+    "step": {
+      "init": {
+        "title": "Dokument-Ereignis",
+        "description": "Wählen, was das Dokument-Ereignis neben der Dokument-ID mitliefert. Ist ein Feld gewählt, fragt die Integration je Ereignis einmal bei Lekto nach dem Dokument. Die Felder bleiben aus dem Verlauf des Recorders; das letzte Ereignis mit seinen Feldern bleibt über einen Neustart erhalten.",
+        "data": {
+          "event_fields": "Felder"
+        },
+        "data_description": {
+          "event_fields": "Kontakt, Dokumenttyp und Tags brauchen das Recht master_data:read, Space braucht spaces:read mit admin:documents_all."
+        }
+      }
+    }
+  },
+  "selector": {
+    "event_fields": {
+      "options": {
+        "title": "Titel",
+        "document_date": "Datum",
+        "contact": "Kontakt",
+        "document_type": "Dokumenttyp",
+        "tags": "Tags",
+        "space": "Space"
+      }
     }
   }
 }

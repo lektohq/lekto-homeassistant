@@ -15,6 +15,28 @@ and stays available while the sensors' numbers cannot be fetched. It needs the r
 Lekto sends no events that happened while the integration was not connected; the sensors catch
 up with the numbers.
 
+## Fields
+
+The event carries only the document's id unless you pick more: under **Settings → Devices &
+services**, open **Lekto** and select **Configure**. With any field picked, the integration asks
+Lekto once per event for the document; the names of contacts, types, tags and spaces it keeps and
+fetches at most hourly. The fields stay out of the recorder, so no title or name ends up in Home
+Assistant's history; automations still see them, and the last event, with its fields, is kept across
+restarts.
+
+| Field (attribute) | Value | Needs |
+| --- | --- | --- |
+| `title` | The document's title | |
+| `document_date` | Its date, such as `2026-11-03` | |
+| `contact` | The contact's name | `master_data:read` |
+| `document_type` | The document type's name | `master_data:read` |
+| `tags` | The names of its tags, as a list | `master_data:read` |
+| `space` | The name of its space | `spaces:read` (with `admin:documents_all`) |
+
+The options offer only the fields the token's rights allow, and nothing without the rights of
+the document event. A field Lekto cannot give at the
+moment, or a document without a date or contact, is left out.
+
 ## Example
 
 A notification when a document needs action:

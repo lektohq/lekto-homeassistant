@@ -1,18 +1,25 @@
 """Made-up values of the tests, and Lekto's answers read from the fixtures."""
 
 import asyncio
-from typing import TYPE_CHECKING
+from datetime import date
+from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL
 from pylekto.models import (
     ClassifierStatusOut,
+    ContactOut,
     DocumentCountOut,
+    DocumentDetails,
+    DocumentTypeOut,
     EventMessage,
     Health,
     InboxSummaryOut,
     JobsSummaryOut,
     Me,
     SearchStatusOut,
+    SpaceOut,
+    TagOut,
 )
 from pytest_homeassistant.common import load_json_object_fixture
 
@@ -92,3 +99,38 @@ def streams(
             await asyncio.Event().wait()
 
     return listen
+
+
+# Only the id and the name matter to the integration; the rest of Lekto's answer is left out.
+CONTACTS = [
+    ContactOut.model_construct(
+        id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2001"), name="Example Energy"
+    ),
+    ContactOut.model_construct(
+        id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2002"), name="Sample Insurance"
+    ),
+    ContactOut.model_construct(
+        id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2003"), name="sample insurance"
+    ),
+]
+DOCUMENT_TYPES = [
+    DocumentTypeOut.model_construct(id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2101"), name="Invoice")
+]
+TAGS = [TagOut.model_construct(id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2201"), name="Car")]
+SPACES = [
+    SpaceOut.model_construct(id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2301"), name="Household")
+]
+
+
+def document(**changes: object) -> DocumentDetails:
+    """Return a document as Lekto details it; only the fields the event names are filled."""
+    values: dict[str, Any] = {
+        "id": UUID(DOCUMENT_ID),
+        "title": "Electricity bill November",
+        "document_date": date(2026, 11, 3),
+        "contact_id": CONTACTS[0].id,
+        "document_type_id": DOCUMENT_TYPES[0].id,
+        "tag_ids": [TAGS[0].id, UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2fff")],
+        "space_id": SPACES[0].id,
+    } | changes
+    return DocumentDetails.model_construct(**values)

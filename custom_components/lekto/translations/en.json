@@ -54,8 +54,17 @@
       "document": {
         "name": "Document",
         "state_attributes": {
+          "contact": {
+            "name": "Contact"
+          },
+          "document_date": {
+            "name": "Date"
+          },
           "document_id": {
             "name": "Document ID"
+          },
+          "document_type": {
+            "name": "Document type"
           },
           "event_type": {
             "state": {
@@ -70,6 +79,15 @@
               "yellow": "Review",
               "red": "Action needed"
             }
+          },
+          "space": {
+            "name": "Space"
+          },
+          "tags": {
+            "name": "Tags"
+          },
+          "title": {
+            "name": "Title"
           }
         }
       }
@@ -192,6 +210,35 @@
         }
       },
       "title": "Lekto ({name}): document events off"
+    }
+  },
+  "options": {
+    "abort": {
+      "no_events": "The token lacks the rights of the document event (documents:read and admin:documents_all), so there is nothing to pick."
+    },
+    "step": {
+      "init": {
+        "title": "Document event",
+        "description": "Pick what the document event carries beside the document's id. With any field picked, the integration asks Lekto once per event for the document. The fields stay out of the recorder's history; the last event, with its fields, is kept across restarts.",
+        "data": {
+          "event_fields": "Fields"
+        },
+        "data_description": {
+          "event_fields": "Contact, document type and tags need the right master_data:read; space needs spaces:read with admin:documents_all."
+        }
+      }
+    }
+  },
+  "selector": {
+    "event_fields": {
+      "options": {
+        "title": "Title",
+        "document_date": "Date",
+        "contact": "Contact",
+        "document_type": "Document type",
+        "tags": "Tags",
+        "space": "Space"
+      }
     }
   }
 }

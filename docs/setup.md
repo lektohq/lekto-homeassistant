@@ -17,6 +17,8 @@ reads the token's rights when it sets up and offers what they allow.
 | --- | --- |
 | `system:read` | the diagnostic sensors: jobs, search index, classifier |
 | `documents:read` and `admin:documents_all` | Lekto's events: the document event, and the numbers updated as soon as something changes; `admin:documents_all` lets the token read every document of the household |
+| `master_data:read` | the names of contacts, document types and tags in the document event's fields |
+| `spaces:read` (with `admin:documents_all`) | the name of the space in the document event's fields |
 
 `documents:read` includes `documents:count`. Lekto shows the token only once; copy it.
 [Lekto's documentation of API tokens](https://github.com/lektohq/lekto/blob/main/docs/api-tokens.md)
@@ -61,3 +63,9 @@ When Lekto moves to another address, or its certificate changes, open **Lekto** 
 **Settings → Devices & services** and select **Reconfigure** from the entry's menu (⋮). Enter
 the new URL and whether to verify the certificate; the token stays. The address must lead to the
 same Lekto instance, and the token must still have the rights above there.
+
+## Options
+
+**Configure** on the entry picks the fields the document event carries beside the document's id:
+title, date, contact, document type, tags, space ([document event](events.md#fields)). None is
+picked at first.

@@ -23,7 +23,9 @@
     "system:write",
     "admin:count_all",
     "admin:mailboxes",
-    "admin:private_webhooks"
+    "admin:private_webhooks",
+    "master_data:read",
+    "spaces:read"
   ],
   "has_password": true,
   "totp_enabled": false,

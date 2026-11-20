@@ -102,7 +102,7 @@ async def test_lost_while_running(
     """A right lost while running sets the entry up again without it, and raises a repair."""
     entry = _entry()
     await _set_up(hass, entry)
-    assert entry.data[CONF_CAPABILITIES] == ["diagnostics", "events"]
+    assert entry.data[CONF_CAPABILITIES] == ["diagnostics", "events", "names", "spaces"]
 
     _rights(lekto, WITHOUT_SYSTEM)
     lekto.jobs.summary.side_effect = FORBIDDEN
@@ -114,7 +114,7 @@ async def test_lost_while_running(
     issue = ir.async_get(hass).async_get_issue(DOMAIN, f"{entry.entry_id}_diagnostics_lost")
     assert issue is not None
     assert issue.translation_placeholders == {"name": "Lekto", "rights": "system:read"}
-    assert entry.data[CONF_CAPABILITIES] == ["diagnostics", "events"]
+    assert entry.data[CONF_CAPABILITIES] == ["diagnostics", "events", "names", "spaces"]
 
 
 async def test_refused_without_lost_right(
@@ -166,7 +166,7 @@ async def test_required_lost(
 async def test_lost_while_off(hass: HomeAssistant, lekto: MagicMock) -> None:
     """A right lost while Home Assistant was off raises the repair at setup."""
     _rights(lekto, MINIMAL)
-    entry = _entry(["diagnostics", "events"])
+    entry = _entry(["diagnostics", "events", "names", "spaces"])
 
     await _set_up(hass, entry)
 
@@ -178,7 +178,7 @@ async def test_lost_while_off(hass: HomeAssistant, lekto: MagicMock) -> None:
 @pytest.mark.usefixtures("lekto")
 async def test_back(hass: HomeAssistant) -> None:
     """A token with the rights again clears the repair."""
-    entry = _entry(["diagnostics", "events"])
+    entry = _entry(["diagnostics", "events", "names", "spaces"])
     entry.add_to_hass(hass)
     ir.async_create_issue(
         hass,
@@ -232,7 +232,7 @@ async def test_repair_remove_entities(
     for entity_id in DIAGNOSTIC_SENSORS:
         assert entity_registry.async_get(entity_id) is None, entity_id
     assert entity_registry.async_get("sensor.lekto_inbox_open") is not None
-    assert entry.data[CONF_CAPABILITIES] == ["events"]
+    assert entry.data[CONF_CAPABILITIES] == ["events", "names", "spaces"]
     assert ir.async_get(hass).async_get_issue(DOMAIN, f"{entry.entry_id}_diagnostics_lost") is None
 
 
@@ -304,7 +304,7 @@ async def test_repair_after_rights_came_back(
     assert result["type"] == "abort"
     assert result["reason"] == "issue_gone"
     assert entity_registry.async_get("sensor.lekto_jobs_failed") is not None
-    assert entry.data[CONF_CAPABILITIES] == ["diagnostics", "events"]
+    assert entry.data[CONF_CAPABILITIES] == ["diagnostics", "events", "names", "spaces"]
 
 
 async def test_entry_removed(hass: HomeAssistant, lekto: MagicMock) -> None:

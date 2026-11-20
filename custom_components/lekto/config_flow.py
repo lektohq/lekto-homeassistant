@@ -4,9 +4,18 @@ import logging
 from typing import TYPE_CHECKING, Any, override
 
 import probatio
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigEntryState,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL
+from homeassistant.core import callback
 from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -19,8 +28,9 @@ from pylekto import (
 )
 
 from . import create_client
-from .capabilities import missing_rights
-from .const import DOMAIN, REQUIRED_RIGHTS
+from .capabilities import Capability, missing_rights
+from .const import CONF_CAPABILITIES, CONF_EVENT_FIELDS, DOMAIN, EVENT_FIELDS, REQUIRED_RIGHTS
+from .names import FIELD_KINDS, NEEDS
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -65,6 +75,13 @@ class LektoConfigFlow(ConfigFlow, domain=DOMAIN):
     """Set up one Lekto instance with a token made for Home Assistant."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    @override
+    def async_get_options_flow(config_entry: ConfigEntry) -> LektoOptionsFlow:
+        """Return the flow that picks what the document event carries."""
+        return LektoOptionsFlow()
 
     @override
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -159,3 +176,45 @@ class LektoConfigFlow(ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Unexpected error while connecting")
             return "unknown"
         return me
+
+
+class LektoOptionsFlow(OptionsFlow):
+    """Pick the fields the document event carries beside the document's id."""
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Offer the fields the token's rights allow."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+        entry = self.config_entry
+        # An entry that is not set up goes by the capabilities it last had.
+        capabilities = (
+            entry.runtime_data.capabilities
+            if entry.state is ConfigEntryState.LOADED
+            else frozenset(
+                Capability(value)
+                for value in entry.data.get(CONF_CAPABILITIES, [])
+                if value in Capability
+            )
+        )
+        if Capability.EVENTS not in capabilities:
+            return self.async_abort(reason="no_events")
+        offered = [
+            field
+            for field in EVENT_FIELDS
+            if field not in FIELD_KINDS or NEEDS[FIELD_KINDS[field]] in capabilities
+        ]
+        schema = probatio.Schema(
+            {
+                probatio.Optional(CONF_EVENT_FIELDS, default=[]): SelectSelector(
+                    SelectSelectorConfig(
+                        options=offered, multiple=True, translation_key=CONF_EVENT_FIELDS
+                    )
+                )
+            }
+        )
+        # A field picked under a token with more rights would be refused by the selector.
+        picked = [f for f in entry.options.get(CONF_EVENT_FIELDS, []) if f in offered]
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(schema, {CONF_EVENT_FIELDS: picked}),
+        )

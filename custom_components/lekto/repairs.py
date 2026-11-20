@@ -28,7 +28,7 @@ def note_capabilities(
     stored: list[str] = entry.data.get(CONF_CAPABILITIES, [str(c) for c in given])
     # A value of another version stays, so that version still knows it after a downgrade.
     kept = sorted({*stored, *given})
-    lost = [c for c in Capability if c in stored and c not in given]
+    lost = [c for c in ENTITY_KEYS if c in stored and c not in given]
     # Issues of this entry not raised again here, such as one of another version, go.
     with ir.async_refresh_issues(hass, DOMAIN, config_entry_id=entry.entry_id):
         for capability in lost:
