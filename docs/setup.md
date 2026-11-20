@@ -78,6 +78,7 @@ again. Updating the integration restarts Home Assistant; after an update of Lekt
 itself up again when the token has `system:read`, else reload it under **Settings → Devices &
 services**.
 
+## A new address
 
 When Lekto moves to another address, or its certificate changes, open **Lekto** under
 **Settings → Devices & services** and select **Reconfigure** from the entry's menu (⋮). Enter
