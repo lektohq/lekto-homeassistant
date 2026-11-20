@@ -200,8 +200,8 @@
         },
         "step": {
           "init": {
-            "title": "Lekto ({name}): Diagnose-Sensoren aus",
-            "description": "Dem Token von Lekto fehlt das Recht {rights}, darum sind die Sensoren zu Jobs, Suchindex und Klassifikator aus. Ein neues Token mit den Rechten eintragen, oder die Entitäten entfernen, die mit ihnen weggefallen sind.",
+            "title": "Lekto ({name}): Diagnose-Entitäten aus",
+            "description": "Dem Token von Lekto fehlt das Recht {rights}, darum sind die Sensoren zu Jobs, Suchindex und Klassifikator und die Update-Entität aus. Ein neues Token mit den Rechten eintragen, oder die Entitäten entfernen, die mit ihnen weggefallen sind.",
             "menu_options": {
               "new_token": "Neues Token eintragen",
               "remove_entities": "Entitäten entfernen"
@@ -213,7 +213,7 @@
           }
         }
       },
-      "title": "Lekto ({name}): Diagnose-Sensoren aus"
+      "title": "Lekto ({name}): Diagnose-Entitäten aus"
     },
     "events_lost": {
       "fix_flow": {

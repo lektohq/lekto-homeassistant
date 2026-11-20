@@ -19,6 +19,7 @@ from pylekto.resources.master_data import (
 from pylekto.resources.operations import ClassifierResource, JobsResource
 from pylekto.resources.search import SearchResource
 from pylekto.resources.spaces import SpacesResource
+from pylekto.resources.version import VersionResource
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.lekto.const import DOMAIN
@@ -42,6 +43,7 @@ from .const import (
     jobs_summary,
     me,
     search_status,
+    version,
 )
 
 if TYPE_CHECKING:
@@ -97,6 +99,8 @@ def lekto_class() -> Iterator[MagicMock]:
         client.search.status.return_value = search_status()
         client.classifier = create_autospec(ClassifierResource, instance=True)
         client.classifier.status.return_value = classifier_status()
+        client.version = create_autospec(VersionResource, instance=True)
+        client.version.get.return_value = version()
         client.events = create_autospec(EventsResource, instance=True)
         client.contacts = create_autospec(ContactsResource, instance=True)
         client.contacts.list.return_value = CONTACTS

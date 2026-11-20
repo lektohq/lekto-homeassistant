@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.typing import ConfigType
 
-PLATFORMS: list[Platform] = [Platform.EVENT, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.EVENT, Platform.SENSOR, Platform.UPDATE]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 

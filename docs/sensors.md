@@ -37,3 +37,13 @@ while one of them fails: their sensor is unavailable then, the others go on.
 
 A lane or a health that a newer Lekto knows and this version of the integration does not shows
 as unknown.
+
+## Update
+
+With `system:read` the device also has an update entity, **Lekto**, under **Diagnostic**. It shows
+the version Lekto runs and the newest release, with a link to its release notes. Lekto looks for
+its releases itself, once an hour; the integration reads what Lekto found, every 60 seconds. While
+Lekto does not look (`LEKTO_UPDATE_CHECK` off) or has not looked yet, the newest release is
+unknown. Home Assistant cannot install it: update Lekto where it runs, for example by pulling its
+new image. Once Lekto runs another version, the integration sets itself up again, and the device
+shows the new version.

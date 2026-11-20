@@ -21,7 +21,7 @@ from .const import DOMAIN
 from .names import LektoNames
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable
 
     from homeassistant.core import HomeAssistant
     from pylekto import LektoClient
@@ -32,6 +32,7 @@ if TYPE_CHECKING:
         JobsSummaryOut,
         Me,
         SearchStatusOut,
+        VersionOut,
     )
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ class LektoData:
     jobs: JobsSummaryOut | None
     search: SearchStatusOut | None
     classifier: ClassifierStatusOut | None
+    version: VersionOut | None
 
 
 class LektoCoordinator(DataUpdateCoordinator[LektoData]):
@@ -100,15 +102,12 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
     @override
     async def _async_update_data(self) -> LektoData:
         """Fetch the inbox's summary, the count of documents and the state of the services."""
-        diagnostics = Capability.DIAGNOSTICS in self.capabilities
         try:
-            inbox, count, health, jobs, search, classifier = await asyncio.gather(
+            inbox, count, health, (jobs, search, classifier, version) = await asyncio.gather(
                 self.client.inbox.summary(all_users=True),
                 self.client.documents.count(all_users=True),
                 self.client.health.get(),
-                _if(self.client.jobs.summary, wanted=diagnostics),
-                _if(lambda: _unless_missing(self.client.search.status()), wanted=diagnostics),
-                _if(lambda: _unless_missing(self.client.classifier.status()), wanted=diagnostics),
+                self._diagnostics(),
             )
         except LektoAuthenticationError as err:
             raise ConfigEntryAuthFailed(
@@ -127,6 +126,9 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
                 translation_key="update_failed",
                 translation_placeholders={"error": str(err)},
             ) from err
+        # A Lekto updated in place may speak another API; setting up again checks it.
+        if version is not None and version.lekto_version != self.lekto_version:
+            self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
         return LektoData(
             inbox=inbox,
             documents=count.total,
@@ -134,6 +136,22 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
             jobs=jobs,
             search=search,
             classifier=classifier,
+            version=version,
+        )
+
+    async def _diagnostics(
+        self,
+    ) -> tuple[
+        JobsSummaryOut | None, SearchStatusOut | None, ClassifierStatusOut | None, VersionOut | None
+    ]:
+        """Fetch the state of the jobs, the services and the versions, if the token may."""
+        if Capability.DIAGNOSTICS not in self.capabilities:
+            return None, None, None, None
+        return await asyncio.gather(
+            self.client.jobs.summary(),
+            _unless_missing(self.client.search.status()),
+            _unless_missing(self.client.classifier.status()),
+            self.client.version.get(),
         )
 
 
@@ -143,8 +161,3 @@ async def _unless_missing[T](request: Awaitable[T]) -> T | None:
         return await request
     except LektoServerError:
         return None
-
-
-async def _if[T](request: Callable[[], Awaitable[T]], *, wanted: bool) -> T | None:
-    """Without the right a request would only be refused, so it is not sent."""
-    return await request() if wanted else None

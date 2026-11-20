@@ -304,7 +304,7 @@ async def test_stream_refused_after_lost_right(hass: HomeAssistant, lekto: Magic
 def test_entity_keys() -> None:
     """The repair removes exactly the entities each capability brings."""
     sensors = {d.key for d in SENSORS if d.capability is Capability.DIAGNOSTICS}
-    assert sensors == ENTITY_KEYS[Capability.DIAGNOSTICS]
+    assert sensors | {"update"} == ENTITY_KEYS[Capability.DIAGNOSTICS]
     assert ENTITY_KEYS[Capability.EVENTS] == {"document"}
 
 

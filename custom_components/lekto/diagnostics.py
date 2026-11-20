@@ -40,5 +40,6 @@ async def async_get_config_entry_diagnostics(
             "jobs": data.jobs.model_dump(mode="json") if data.jobs else None,
             "search": data.search.model_dump(mode="json") if data.search else None,
             "classifier": data.classifier.model_dump(mode="json") if data.classifier else None,
+            "version": data.version.model_dump(mode="json") if data.version else None,
         },
     }

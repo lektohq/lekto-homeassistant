@@ -24,6 +24,7 @@ from pylekto.models import (
     SearchStatusOut,
     SpaceOut,
     TagOut,
+    VersionOut,
 )
 from pytest_homeassistant.common import load_json_object_fixture
 
@@ -67,6 +68,11 @@ def jobs_summary(**changes: object) -> JobsSummaryOut:
 def search_status() -> SearchStatusOut:
     """Return Lekto's answer to ``GET /search/status`` from the fixture."""
     return SearchStatusOut.model_validate(load_json_object_fixture("search_status.json"))
+
+
+def version(**changes: object) -> VersionOut:
+    """Return Lekto's answer to ``GET /version`` from the fixture, with ``changes``."""
+    return VersionOut.model_validate(load_json_object_fixture("version.json") | changes)
 
 
 def classifier_status() -> ClassifierStatusOut:
