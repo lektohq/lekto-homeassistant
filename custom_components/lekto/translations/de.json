@@ -192,6 +192,18 @@
     }
   },
   "issues": {
+    "api_newer": {
+      "title": "Lekto ({name}): Integration aktualisieren",
+      "description": "Lekto {lekto_version} spricht die Version {api_version} seiner API, neuer als die Version {integration_api} dieser Integration. Manche Zahlen, Ereignisse oder Aktionen können fehlschlagen. Die Integration im Marketplace aktualisieren; die Reparatur verschwindet, sobald beide passen."
+    },
+    "api_older": {
+      "title": "Lekto ({name}): Lekto aktualisieren",
+      "description": "Lekto {lekto_version} spricht die Version {api_version} seiner API, älter als die Version {integration_api} dieser Integration. Manche Zahlen, Ereignisse oder Aktionen können fehlschlagen. Lekto dort aktualisieren, wo es läuft; die Reparatur verschwindet, sobald beide passen."
+    },
+    "api_unknown": {
+      "title": "Lekto ({name}): API-Version unlesbar",
+      "description": "Lekto {lekto_version} nennt als Version seiner API {api_version}, die diese Integration nicht lesen kann; sie spricht die Version {integration_api}. Manche Zahlen, Ereignisse oder Aktionen können fehlschlagen. Lekto und die Integration auf ihre neuesten Versionen aktualisieren; die Reparatur verschwindet, sobald beide passen."
+    },
     "diagnostics_lost": {
       "fix_flow": {
         "abort": {

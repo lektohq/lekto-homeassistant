@@ -59,7 +59,25 @@ diagnostic entities off". The repair offers two ways out:
 - **Remove the entities** that the right opened. The repair does not come back; a later token
   with the right brings them back.
 
-## A new address
+## Another version of Lekto's API
+
+Lekto and the integration each speak a version of Lekto's API. While Lekto is in beta, every
+change of the API raises its version, and the integration speaks exactly one; from 1.0 on, an
+integration also works with a Lekto that only added to the API. When they do not fit, the
+integration still sets up and goes on, as most of the API usually works, and reports it under
+**Settings → System → Repairs**, naming both versions:
+
+- **"Lekto: update the integration"**: Lekto speaks a newer API. Update the integration in the
+  Marketplace.
+- **"Lekto: update Lekto"**: Lekto speaks an older API. Update Lekto where it runs.
+- **"Lekto: unreadable API version"**: Lekto names a version the integration cannot read. Update
+  both to their newest releases.
+
+The repair cannot be fixed from Home Assistant; it goes once the two fit and the entry sets up
+again. Updating the integration restarts Home Assistant; after an update of Lekto the entry sets
+itself up again when the token has `system:read`, else reload it under **Settings → Devices &
+services**.
+
 
 When Lekto moves to another address, or its certificate changes, open **Lekto** under
 **Settings → Devices & services** and select **Reconfigure** from the entry's menu (⋮). Enter
