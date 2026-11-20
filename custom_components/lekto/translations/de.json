@@ -306,6 +306,10 @@
           "name": "Lekto-Instanz",
           "description": "Die Lekto-Instanz, die gefragt wird."
         },
+        "inbox": {
+          "name": "Im Posteingang",
+          "description": "Nur Dokumente offen im Posteingang (an) oder nur die außerhalb (aus); alle, wenn leer."
+        },
         "lane": {
           "name": "Lane",
           "description": "Nur Dokumente in diesen Lanes."
@@ -357,6 +361,10 @@
         "config_entry_id": {
           "name": "Lekto-Instanz",
           "description": "Die Lekto-Instanz, die gefragt wird."
+        },
+        "inbox": {
+          "name": "Im Posteingang",
+          "description": "Nur Dokumente offen im Posteingang (an) oder nur die außerhalb (aus); alle, wenn leer."
         },
         "lane": {
           "name": "Lane",

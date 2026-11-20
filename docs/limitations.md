@@ -4,8 +4,6 @@
 - **The household needs an admin's token.** The numbers count every user's documents, which only
   an admin's token may do (`admin:count_all`); the document event and the list of documents need
   `admin:documents_all`.
-- **No inbox filter in the actions.** `lekto.count` and `lekto.list_documents` filter by lane,
-  contact, type, tag, space and date, but not by the inbox: Lekto's API cannot filter by it yet.
 - **No missed events.** Lekto does not send events that happened while the integration was not
   connected; the sensors catch up, the document event does not fire for them.
 - **The document event carries little by default.** Without fields picked in the options, it

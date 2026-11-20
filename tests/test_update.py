@@ -43,9 +43,9 @@ async def test_update_available(
     state = hass.states.get(UPDATE)
     assert state is not None
     assert state.state == STATE_ON
-    assert state.attributes[ATTR_INSTALLED_VERSION] == "0.16.0"
-    assert state.attributes[ATTR_LATEST_VERSION] == "0.17.0"
-    assert state.attributes["release_url"] == "https://releases.example.com/lekto/v0.17.0"
+    assert state.attributes[ATTR_INSTALLED_VERSION] == "0.17.0"
+    assert state.attributes[ATTR_LATEST_VERSION] == "0.18.0"
+    assert state.attributes["release_url"] == "https://releases.example.com/lekto/v0.18.0"
     assert state.attributes["supported_features"] == 0
     entry = entity_registry.async_get(UPDATE)
     assert entry is not None
@@ -64,7 +64,7 @@ async def test_up_to_date(
     state = hass.states.get(UPDATE)
     assert state is not None
     assert state.state == STATE_OFF
-    assert state.attributes[ATTR_LATEST_VERSION] == "0.16.0"
+    assert state.attributes[ATTR_LATEST_VERSION] == "0.17.0"
     assert state.attributes["release_url"] is None
 
 
@@ -104,7 +104,7 @@ async def test_newest_unknown(
     state = hass.states.get(UPDATE)
     assert state is not None
     assert state.state == STATE_UNKNOWN
-    assert state.attributes[ATTR_INSTALLED_VERSION] == "0.16.0"
+    assert state.attributes[ATTR_INSTALLED_VERSION] == "0.17.0"
     assert state.attributes[ATTR_LATEST_VERSION] is None
 
 
@@ -131,7 +131,7 @@ async def test_lekto_updated(
     """When Lekto runs another version than at setup, the entry is set up again."""
     await _set_up(hass, config_entry)
     lekto.version.get.return_value = version(
-        lekto_version="0.17.0", latest=None, update_available=False
+        lekto_version="0.18.0", latest=None, update_available=False
     )
 
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:
@@ -148,7 +148,7 @@ async def test_other_version_than_at_setup(
     freezer: FrozenDateTimeFactory,
 ) -> None:
     """Replicas of two versions behind one address do not reload the entry again and again."""
-    lekto.version.get.return_value = version(lekto_version="0.17.0")
+    lekto.version.get.return_value = version(lekto_version="0.18.0")
 
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:
         await _set_up(hass, config_entry)

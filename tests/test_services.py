@@ -377,6 +377,7 @@ async def test_count_filtered(
         hass,
         loaded,
         "count",
+        inbox=True,
         lane=["red", "processing"],
         contact=["sample insurance"],
         document_type="Invoice",
@@ -388,6 +389,7 @@ async def test_count_filtered(
 
     lekto.documents.count.assert_awaited_with(
         all_users=True,
+        in_inbox=True,
         lane=["red", "processing"],
         contact_id=[CONTACTS[1].id, CONTACTS[2].id],
         document_type_id=[DOCUMENT_TYPES[0].id],
@@ -395,6 +397,17 @@ async def test_count_filtered(
         space_id=[SPACES[0].id],
         document_date_from=date(2026, 1, 1),
         document_date_to=date(2026, 11, 30),
+    )
+
+
+async def test_outside_the_inbox(
+    hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry
+) -> None:
+    """Off takes the documents not in the inbox, as Lekto's own false does."""
+    await _call(hass, loaded, "list_documents", inbox=False)
+
+    lekto.documents.page.assert_awaited_once_with(
+        limit=10, sort="-created_at", all_users=True, in_inbox=False
     )
 
 
