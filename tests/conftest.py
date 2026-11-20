@@ -10,6 +10,7 @@ from pylekto.resources.documents import DocumentsResource
 from pylekto.resources.events import EventsResource
 from pylekto.resources.health import HealthResource
 from pylekto.resources.inbox import InboxResource
+from pylekto.resources.mail import MailboxesResource
 from pylekto.resources.master_data import (
     ContactsResource,
     DocumentTypesResource,
@@ -23,10 +24,12 @@ from pytest_homeassistant.common import MockConfigEntry
 from custom_components.lekto.const import DOMAIN
 
 from .const import (
+    ACCEPTED,
     CONTACTS,
     DOCUMENT_TYPES,
     ENTRY_DATA,
     INSTANCE_ID,
+    MAILBOXES,
     SPACES,
     TAGS,
     classifier_status,
@@ -81,6 +84,9 @@ def lekto_class() -> Iterator[MagicMock]:
         client.documents = create_autospec(DocumentsResource, instance=True)
         client.documents.count.return_value = documents_count()
         client.documents.get.return_value = document()
+        client.documents.upload.return_value = ACCEPTED
+        client.mailboxes = create_autospec(MailboxesResource, instance=True)
+        client.mailboxes.list.return_value = MAILBOXES
         client.health = create_autospec(HealthResource, instance=True)
         client.health.get.return_value = health()
         client.jobs = create_autospec(JobsResource, instance=True)

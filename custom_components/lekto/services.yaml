@@ -1,0 +1,36 @@
+upload:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: lekto
+    file:
+      required: true
+      selector:
+        media:
+          accept:
+            - application/pdf
+            - image/jpeg
+            - image/png
+            - image/tiff
+            - message/rfc822
+    name:
+      required: false
+      selector:
+        text:
+    space:
+      required: false
+      selector:
+        text:
+fetch_mail:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: lekto
+    mailbox:
+      required: false
+      selector:
+        text:

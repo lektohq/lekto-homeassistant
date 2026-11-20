@@ -8,6 +8,7 @@ from homeassistant.exceptions import (
     ConfigEntryError,
     ConfigEntryNotReady,
 )
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.httpx_client import get_async_client
 from pylekto import (
     LektoAuthenticationError,
@@ -21,14 +22,24 @@ from .capabilities import Capability, capabilities, missing_rights
 from .const import DOMAIN, REQUIRED_RIGHTS
 from .coordinator import LektoConfigEntry, LektoCoordinator
 from .repairs import note_capabilities
+from .services import async_setup_services
 from .stream import listen
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.typing import ConfigType
 
 PLATFORMS: list[Platform] = [Platform.EVENT, Platform.SENSOR]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
+    """Register the actions, so they exist even while no entry is loaded."""
+    async_setup_services(hass)
+    return True
 
 
 def create_client(hass: HomeAssistant, data: Mapping[str, Any]) -> LektoClient:

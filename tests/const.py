@@ -9,6 +9,7 @@ from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL
 from pylekto.models import (
     ClassifierStatusOut,
     ContactOut,
+    DocumentAccepted,
     DocumentCountOut,
     DocumentDetails,
     DocumentTypeOut,
@@ -16,6 +17,7 @@ from pylekto.models import (
     Health,
     InboxSummaryOut,
     JobsSummaryOut,
+    MailboxOut,
     Me,
     SearchStatusOut,
     SpaceOut,
@@ -134,3 +136,16 @@ def document(**changes: object) -> DocumentDetails:
         "space_id": SPACES[0].id,
     } | changes
     return DocumentDetails.model_construct(**values)
+
+
+MAILBOXES = [
+    MailboxOut.model_construct(
+        id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2401"), name="Family", enabled=True
+    ),
+    MailboxOut.model_construct(
+        id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2402"), name="Old", enabled=False
+    ),
+]
+ACCEPTED = DocumentAccepted.model_construct(
+    id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2501"), status_url="/api/v1/documents/x"
+)

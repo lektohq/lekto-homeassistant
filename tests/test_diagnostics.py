@@ -36,7 +36,7 @@ async def test_diagnostics(
         "api_token": REDACTED,
         "url": REDACTED,
         "verify_ssl": True,
-        "capabilities": ["diagnostics", "events", "names", "spaces"],
+        "capabilities": ["diagnostics", "events", "mail", "names", "spaces", "upload"],
     }
     assert entry["unique_id"] == REDACTED
     assert entry["title"] == REDACTED
@@ -46,7 +46,7 @@ async def test_diagnostics(
     assert diagnostics["lekto"] == {
         "lekto_version": "0.16.0",
         "api_version": "0.2",
-        "capabilities": ["diagnostics", "events", "names", "spaces"],
+        "capabilities": ["diagnostics", "events", "mail", "names", "spaces", "upload"],
         "rights": [
             "admin:count_all",
             "admin:documents_all",
