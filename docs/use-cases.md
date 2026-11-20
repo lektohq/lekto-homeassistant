@@ -91,7 +91,7 @@ automation:
 
 [`lekto.count`](actions.md#lektocount) and
 [`lekto.list_documents`](actions.md#lektolist_documents) answer questions such as "how many
-invoices need action" or "what are the three newest documents to review", for a voice assistant
+invoices need action" or "what are the three newest documents in the inbox", for a voice assistant
 or a morning summary:
 
 ```yaml
@@ -101,7 +101,7 @@ script:
       - action: lekto.list_documents
         data:
           config_entry_id: 0123456789abcdef0123456789abcdef
-          lane: [red, yellow]
+          inbox: true
           limit: 3
         response_variable: waiting
       - action: notify.notify

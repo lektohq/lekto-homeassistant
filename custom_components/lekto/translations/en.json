@@ -306,6 +306,10 @@
           "name": "Lekto instance",
           "description": "The Lekto instance to ask."
         },
+        "inbox": {
+          "name": "In the inbox",
+          "description": "Only documents open in the inbox (on), or only those not in it (off); all if empty."
+        },
         "lane": {
           "name": "Lane",
           "description": "Only documents in these lanes."
@@ -357,6 +361,10 @@
         "config_entry_id": {
           "name": "Lekto instance",
           "description": "The Lekto instance to ask."
+        },
+        "inbox": {
+          "name": "In the inbox",
+          "description": "Only documents open in the inbox (on), or only those not in it (off); all if empty."
         },
         "lane": {
           "name": "Lane",

@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
     from homeassistant.util.json import JsonValueType
     from pylekto.models import ListedDocument
-    from pylekto.types import DocumentFilter
+    from pylekto.types import ListedFilter
 
     from .coordinator import LektoConfigEntry, LektoCoordinator
 
@@ -38,6 +38,7 @@ CONF_CONFIG_ENTRY_ID = "config_entry_id"
 CONF_FILE = "file"
 CONF_SPACE = "space"
 CONF_MAILBOX = "mailbox"
+CONF_INBOX = "inbox"
 CONF_LANE = "lane"
 CONF_CONTACT = "contact"
 CONF_DOCUMENT_TYPE = "document_type"
@@ -63,6 +64,7 @@ UPLOAD_SCHEMA = probatio.Schema(
 )
 FILTERS = {
     probatio.Required(CONF_CONFIG_ENTRY_ID): str,
+    probatio.Optional(CONF_INBOX): cv.boolean,
     probatio.Optional(CONF_LANE): probatio.All(cv.ensure_list, [probatio.In(LANES)]),
     probatio.Optional(CONF_CONTACT): probatio.All(cv.ensure_list, [cv.string]),
     probatio.Optional(CONF_DOCUMENT_TYPE): probatio.All(cv.ensure_list, [cv.string]),
@@ -215,9 +217,11 @@ async def _ids(coordinator: LektoCoordinator, kind: Kind, name: str) -> list[UUI
     return ids
 
 
-async def _filters(coordinator: LektoCoordinator, data: Mapping[str, Any]) -> DocumentFilter:
+async def _filters(coordinator: LektoCoordinator, data: Mapping[str, Any]) -> ListedFilter:
     """Lekto filters by ids within the caller's reach; the household needs `all_users`."""
-    filters: DocumentFilter = {"all_users": True}
+    filters: ListedFilter = {"all_users": True}
+    if (inbox := data.get(CONF_INBOX)) is not None:
+        filters["in_inbox"] = inbox
     if lanes := data.get(CONF_LANE):
         filters["lane"] = lanes
     if names := data.get(CONF_CONTACT):

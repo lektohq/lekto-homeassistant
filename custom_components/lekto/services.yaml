@@ -41,6 +41,10 @@ count:
       selector:
         config_entry:
           integration: lekto
+    inbox:
+      required: false
+      selector:
+        boolean:
     lane:
       required: false
       selector:
@@ -87,6 +91,10 @@ list_documents:
       selector:
         config_entry:
           integration: lekto
+    inbox:
+      required: false
+      selector:
+        boolean:
     lane:
       required: false
       selector:

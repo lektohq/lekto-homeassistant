@@ -48,6 +48,7 @@ and several filters narrow each other. They cover the whole household.
 
 | Field | Meaning |
 | --- | --- |
+| `inbox` | `true`: only documents open in the household's inbox, as the sensor **Inbox open** counts them (in processing, to review, action needed, or new and not yet seen by the token's user); `false`: only those not in it |
 | `lane` | Only documents in these lanes: `green` (went through or was resolved; in the inbox such a document shows as new), `yellow` (review), `red` (action needed), `processing` |
 | `contact` | Only documents of these contacts, by name; needs `master_data:read` |
 | `document_type` | Only documents of these types, by name; needs `master_data:read` |
@@ -56,8 +57,7 @@ and several filters narrow each other. They cover the whole household.
 | `date_from`, `date_to` | Only documents dated within these days |
 
 Names are compared without regard to case; a name several contacts share takes all of them, a
-name Lekto does not know fails the action. There is no filter for the inbox yet: Lekto cannot
-filter by it.
+name Lekto does not know fails the action.
 
 ## `lekto.count`
 
