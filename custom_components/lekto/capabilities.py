@@ -18,14 +18,19 @@ class Capability(StrEnum):
 
     DIAGNOSTICS = "diagnostics"
     EVENTS = "events"
+    NAMES = "names"
+    SPACES = "spaces"
 
 
 RIGHTS: Final[dict[Capability, frozenset[str]]] = {
     Capability.DIAGNOSTICS: frozenset({"system:read"}),
     Capability.EVENTS: frozenset({"documents:read", "admin:documents_all"}),
+    Capability.NAMES: frozenset({"master_data:read"}),
+    Capability.SPACES: frozenset({"spaces:read", "admin:documents_all"}),
 }
 
 # The repair removes these from the entity registry; a test keeps them in step with the sensors.
+# A capability without entities raises no repair: its action names the right it lacks.
 ENTITY_KEYS: Final[dict[Capability, frozenset[str]]] = {
     Capability.DIAGNOSTICS: frozenset(
         {

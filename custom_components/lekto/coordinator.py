@@ -18,6 +18,7 @@ from pylekto import (
 
 from .capabilities import Capability, capabilities, missing_rights
 from .const import DOMAIN
+from .names import LektoNames
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -77,6 +78,7 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
         self.api_version = me.api_version
         self.rights = sorted(me.rights)
         self.capabilities = given
+        self.names = LektoNames(client, given)
         self._reloading = False
 
     async def reload_if_rights_changed(self) -> None:

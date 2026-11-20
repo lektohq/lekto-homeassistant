@@ -10,15 +10,25 @@ from pylekto.resources.documents import DocumentsResource
 from pylekto.resources.events import EventsResource
 from pylekto.resources.health import HealthResource
 from pylekto.resources.inbox import InboxResource
+from pylekto.resources.master_data import (
+    ContactsResource,
+    DocumentTypesResource,
+    TagsResource,
+)
 from pylekto.resources.operations import ClassifierResource, JobsResource
 from pylekto.resources.search import SearchResource
+from pylekto.resources.spaces import SpacesResource
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.lekto.const import DOMAIN
 
 from .const import (
+    CONTACTS,
+    DOCUMENT_TYPES,
     ENTRY_DATA,
     INSTANCE_ID,
+    SPACES,
+    TAGS,
     classifier_status,
     documents_count,
     event,
@@ -78,6 +88,14 @@ def lekto_class() -> Iterator[MagicMock]:
         client.classifier = create_autospec(ClassifierResource, instance=True)
         client.classifier.status.return_value = classifier_status()
         client.events = create_autospec(EventsResource, instance=True)
+        client.contacts = create_autospec(ContactsResource, instance=True)
+        client.contacts.list.return_value = CONTACTS
+        client.document_types = create_autospec(DocumentTypesResource, instance=True)
+        client.document_types.list.return_value = DOCUMENT_TYPES
+        client.tags = create_autospec(TagsResource, instance=True)
+        client.tags.list.return_value = TAGS
+        client.spaces = create_autospec(SpacesResource, instance=True)
+        client.spaces.list.return_value = SPACES
         client.events.listen.side_effect = quiet_stream
         yield client_class
 

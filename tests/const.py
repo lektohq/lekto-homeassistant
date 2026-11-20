@@ -2,17 +2,22 @@
 
 import asyncio
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL
 from pylekto.models import (
     ClassifierStatusOut,
+    ContactOut,
     DocumentCountOut,
+    DocumentTypeOut,
     EventMessage,
     Health,
     InboxSummaryOut,
     JobsSummaryOut,
     Me,
     SearchStatusOut,
+    SpaceOut,
+    TagOut,
 )
 from pytest_homeassistant.common import load_json_object_fixture
 
@@ -92,3 +97,24 @@ def streams(
             await asyncio.Event().wait()
 
     return listen
+
+
+# Only the id and the name matter to the integration; the rest of Lekto's answer is left out.
+CONTACTS = [
+    ContactOut.model_construct(
+        id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2001"), name="Example Energy"
+    ),
+    ContactOut.model_construct(
+        id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2002"), name="Sample Insurance"
+    ),
+    ContactOut.model_construct(
+        id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2003"), name="sample insurance"
+    ),
+]
+DOCUMENT_TYPES = [
+    DocumentTypeOut.model_construct(id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2101"), name="Invoice")
+]
+TAGS = [TagOut.model_construct(id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2201"), name="Car")]
+SPACES = [
+    SpaceOut.model_construct(id=UUID("0195f3c2-7a10-7c4e-9b1d-2f6a8e4c2301"), name="Household")
+]
