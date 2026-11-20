@@ -13,7 +13,6 @@ from homeassistant.helpers import entity_registry as er
 from pylekto import (
     LektoAuthenticationError,
     LektoConnectionError,
-    LektoForbiddenError,
     LektoServerError,
 )
 from pylekto.models import Problem
@@ -174,27 +173,16 @@ async def test_first_refresh_failed(
 
 
 @pytest.mark.usefixtures("loaded_entry")
-@pytest.mark.parametrize(
-    "error",
-    [
-        LektoAuthenticationError(Problem(title="Unauthorized", status=401)),
-        LektoForbiddenError(Problem(title="Forbidden", status=403)),
-    ],
-)
 @pytest.mark.parametrize("failing", ["inbox", "jobs", "classifier"])
 async def test_update_starts_reauth(
-    hass: HomeAssistant,
-    lekto: MagicMock,
-    freezer: FrozenDateTimeFactory,
-    error: Exception,
-    failing: str,
+    hass: HomeAssistant, lekto: MagicMock, freezer: FrozenDateTimeFactory, failing: str
 ) -> None:
-    """A token Lekto stops accepting, or that lost a right, asks for a new one."""
+    """A token Lekto stops accepting asks for a new one."""
     {
         "inbox": lekto.inbox.summary,
         "jobs": lekto.jobs.summary,
         "classifier": lekto.classifier.status,
-    }[failing].side_effect = error
+    }[failing].side_effect = LektoAuthenticationError(Problem(title="Unauthorized", status=401))
 
     await _next_update(hass, freezer)
 

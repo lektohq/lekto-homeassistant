@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
 import pytest
+from pylekto.resources.auth import AuthResource
 from pylekto.resources.documents import DocumentsResource
 from pylekto.resources.events import EventsResource
 from pylekto.resources.health import HealthResource
@@ -62,6 +63,8 @@ def lekto_class() -> Iterator[MagicMock]:
     with patch("custom_components.lekto.LektoClient", autospec=True) as client_class:
         client = client_class.return_value
         client.connect.return_value = me()
+        client.auth = create_autospec(AuthResource, instance=True)
+        client.auth.me.return_value = me()
         client.inbox = create_autospec(InboxResource, instance=True)
         client.inbox.summary.return_value = inbox_summary()
         client.documents = create_autospec(DocumentsResource, instance=True)

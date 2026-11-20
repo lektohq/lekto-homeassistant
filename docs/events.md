@@ -1,9 +1,10 @@
 # Document event
 
-The event entity **Document** (`event.lekto_document`) fires when a document of the household
-comes in, is filed or waits for someone to look at it. It carries the document's id and, when a
-review is needed, the lane; no title, contact or type, which stay in Lekto. It comes from Lekto's
-event stream and stays available while the sensors' numbers cannot be fetched.
+The event entity **Document** (`event.lekto_document`) fires when a document of the household comes
+in, is filed or waits for someone to look at it. It carries the document's id and, when a review is
+needed, the lane; no title, contact or type, which stay in Lekto. It comes from Lekto's event stream
+and stays available while the sensors' numbers cannot be fetched. It needs the rights
+`documents:read` and `admin:documents_all` ([setup](setup.md)).
 
 | Event type (`event_type`) | Shown as | When | Attributes |
 | --- | --- | --- | --- |

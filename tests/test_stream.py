@@ -10,7 +10,6 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from pylekto import (
     LektoAuthenticationError,
     LektoConnectionError,
-    LektoForbiddenError,
     LektoRateLimitError,
 )
 from pylekto.models import Problem
@@ -102,18 +101,13 @@ async def test_reconnect_waits_at_most(
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 
-@pytest.mark.parametrize(
-    "error",
-    [
-        LektoAuthenticationError(Problem(title="Unauthorized", status=401)),
-        LektoForbiddenError(Problem(title="Forbidden", status=403)),
-    ],
-)
 async def test_refused(
-    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry, error: Exception
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
-    """A token Lekto stops accepting, or that lost a right, ends the stream and asks anew."""
-    lekto.events.listen.side_effect = streams(error)
+    """A token Lekto stops accepting ends the stream and asks for a new one."""
+    lekto.events.listen.side_effect = streams(
+        LektoAuthenticationError(Problem(title="Unauthorized", status=401))
+    )
 
     await _set_up(hass, config_entry)
 

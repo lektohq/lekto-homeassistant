@@ -62,9 +62,14 @@ async def listen(hass: HomeAssistant, entry: LektoConfigEntry) -> None:
                     _LOGGER.info("The event stream is back")
                     lost = False
                 _handle(hass, entry, event)
-        except LektoAuthenticationError, LektoForbiddenError:
+        except LektoAuthenticationError:
             entry.async_start_reauth(hass)
             return
+        except LektoForbiddenError as err:
+            await coordinator.reload_if_rights_changed()
+            if not lost:
+                _LOGGER.info("Lost the event stream, connecting again: %s", err)
+                lost = True
         except LektoRateLimitError as err:
             retry = max(retry, err.retry_after or 0)
         except LektoError as err:

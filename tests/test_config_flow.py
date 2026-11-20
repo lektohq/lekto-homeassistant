@@ -92,9 +92,7 @@ async def test_user_error(
     "rights",
     [
         ["admin:documents_all", "documents:read", "system:read"],
-        ["admin:count_all", "documents:read", "system:read"],
-        ["admin:count_all", "admin:documents_all", "documents:count", "system:read"],
-        ["admin:count_all", "admin:documents_all", "documents:read"],
+        ["documents:upload", "system:read"],
     ],
 )
 async def test_user_missing_rights(
@@ -110,10 +108,7 @@ async def test_user_missing_rights(
     assert result["errors"] == {"base": "missing_rights"}
     placeholders = result["description_placeholders"]
     assert placeholders is not None
-    assert (
-        placeholders["rights"]
-        == "admin:count_all, admin:documents_all, documents:read, system:read"
-    )
+    assert placeholders["rights"] == "admin:count_all, documents:count"
 
 
 async def test_user_already_configured(

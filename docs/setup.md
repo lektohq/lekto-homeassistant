@@ -3,22 +3,24 @@
 ## The API token
 
 Home Assistant uses an API token of a Lekto admin, made for it alone. In Lekto, go to
-**Settings › API-Tokens**, create a token with **Eigene Rechte** and tick:
+**Settings › API-Tokens**, create a token with **Eigene Rechte** and tick at least:
 
 | Right | Why |
 | --- | --- |
-| `documents:read` | the numbers, and the events of documents as they happen |
-| `admin:count_all` | the numbers of the whole household, not only the admin's own documents |
-| `admin:documents_all` | the events of every user's documents, not only the admin's own; it lets the token read every document |
-| `system:read` | the state of Lekto's jobs, search index and classifier |
+| `documents:count` | the numbers of the inbox and of all documents |
+| `admin:count_all` | those numbers for the whole household, not only the admin's own documents |
 
-The integration refuses a token without them. Lekto shows the token only once; copy it.
+The integration refuses a token without them. Every other right is optional: the integration
+reads the token's rights when it sets up and offers what they allow.
 
+| Optional right | What it opens |
+| --- | --- |
+| `system:read` | the diagnostic sensors: jobs, search index, classifier |
+| `documents:read` and `admin:documents_all` | Lekto's events: the document event, and the numbers updated as soon as something changes; `admin:documents_all` lets the token read every document of the household |
+
+`documents:read` includes `documents:count`. Lekto shows the token only once; copy it.
 [Lekto's documentation of API tokens](https://github.com/lektohq/lekto/blob/main/docs/api-tokens.md)
-lists the rights of a token for Home Assistant: `documents:read`, `documents:upload`,
-`webhooks:read`, `webhooks:write`, `system:read`, `system:write`, `admin:count_all`,
-`admin:mailboxes`, `admin:private_webhooks`. The integration also needs `admin:documents_all`,
-which that list does not name.
+suggests rights for Home Assistant; that list lacks `admin:documents_all`, which the events need.
 
 ## Adding the integration
 
@@ -36,11 +38,22 @@ token.
 
 ## A new token
 
-When Lekto refuses the token (unknown, expired or revoked) or it lacks the rights above, for
-example because its user is no admin anymore, Home Assistant asks for a new one: it reports
-"Authentication expired for Lekto" under **Settings → System → Repairs**, and the entry under
-**Settings → Devices & services** offers to enter a new token. Make one as above and enter it
-there. It must come from the same Lekto instance; the address and the other settings stay.
+When Lekto refuses the token (unknown, expired or revoked) or it lacks `documents:count` or
+`admin:count_all`, for example because its user is no admin anymore, Home Assistant asks for a
+new one: it reports "Authentication expired for Lekto" under **Settings → System → Repairs**,
+and the entry under **Settings → Devices & services** offers to enter a new token. Make one as
+above and enter it there. It must come from the same Lekto instance; the address and the other
+settings stay.
+
+## A right gone
+
+When the token loses an optional right, the integration sets itself up again without what that
+right opened, and reports it under **Settings → System → Repairs**, for example "Lekto:
+diagnostic sensors off". The repair offers two ways out:
+
+- **Enter a new token** that has the right again; the entities come back.
+- **Remove the entities** that the right opened. The repair does not come back; a later token
+  with the right brings them back.
 
 ## A new address
 

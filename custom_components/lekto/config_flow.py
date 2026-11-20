@@ -18,7 +18,8 @@ from pylekto import (
     LektoResponseError,
 )
 
-from . import create_client, missing_rights
+from . import create_client
+from .capabilities import missing_rights
 from .const import DOMAIN, REQUIRED_RIGHTS
 
 if TYPE_CHECKING:

@@ -11,6 +11,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import EntityCategory
 
+from .capabilities import Capability
 from .entity import LektoEntity
 
 if TYPE_CHECKING:
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
     from homeassistant.helpers.typing import StateType
+    from pylekto.models import KindSummaryOut
 
     from .coordinator import LektoConfigEntry, LektoCoordinator, LektoData
 
@@ -37,6 +39,7 @@ class LektoSensorEntityDescription(SensorEntityDescription):
 
     value: Callable[[LektoData], StateType | datetime]
     available: Callable[[LektoData], bool] = lambda _: True
+    capability: Capability | None = None
 
 
 def _worst_lane(data: LektoData) -> str | None:
@@ -50,15 +53,23 @@ def _health(data: LektoData) -> str | None:
     return HEALTH.get(data.health.status)
 
 
+def _jobs(data: LektoData, count: Callable[[KindSummaryOut], int]) -> int | None:
+    return None if data.jobs is None else sum(count(kind) for kind in data.jobs.kinds)
+
+
 def _count(
-    key: str, value: Callable[[LektoData], int], *, diagnostic: bool = False
+    key: str,
+    value: Callable[[LektoData], int | None],
+    *,
+    capability: Capability | None = None,
 ) -> LektoSensorEntityDescription:
     return LektoSensorEntityDescription(
         key=key,
         translation_key=key,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC if diagnostic else None,
+        entity_category=None if capability is None else EntityCategory.DIAGNOSTIC,
         value=value,
+        capability=capability,
     )
 
 
@@ -86,17 +97,22 @@ SENSORS: tuple[LektoSensorEntityDescription, ...] = (
     ),
     _count(
         "jobs_failed",
-        lambda data: sum(kind.failed for kind in data.jobs.kinds),
-        diagnostic=True,
+        lambda data: _jobs(data, lambda kind: kind.failed),
+        capability=Capability.DIAGNOSTICS,
     ),
-    _count("jobs_due", lambda data: sum(kind.due for kind in data.jobs.kinds), diagnostic=True),
+    _count(
+        "jobs_due",
+        lambda data: _jobs(data, lambda kind: kind.due),
+        capability=Capability.DIAGNOSTICS,
+    ),
     LektoSensorEntityDescription(
         key="worker_last_started",
         translation_key="worker_last_started",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
-        value=lambda data: data.jobs.last_started_at,
+        value=lambda data: None if data.jobs is None else data.jobs.last_started_at,
+        capability=Capability.DIAGNOSTICS,
     ),
     LektoSensorEntityDescription(
         key="search_queued",
@@ -105,6 +121,7 @@ SENSORS: tuple[LektoSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value=lambda data: data.search.queued if data.search else None,
         available=lambda data: data.search is not None,
+        capability=Capability.DIAGNOSTICS,
     ),
     LektoSensorEntityDescription(
         key="classifier_confirmed_since",
@@ -114,6 +131,7 @@ SENSORS: tuple[LektoSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
         value=lambda data: data.classifier.since if data.classifier else None,
         available=lambda data: data.classifier is not None,
+        capability=Capability.DIAGNOSTICS,
     ),
 )
 
@@ -123,8 +141,13 @@ async def async_setup_entry(
     entry: LektoConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add the sensors of the instance."""
-    async_add_entities(LektoSensor(entry.runtime_data, description) for description in SENSORS)
+    """Add the sensors of the instance that the token's rights allow."""
+    coordinator = entry.runtime_data
+    async_add_entities(
+        LektoSensor(coordinator, description)
+        for description in SENSORS
+        if description.capability is None or description.capability in coordinator.capabilities
+    )
 
 
 class LektoSensor(LektoEntity, SensorEntity):

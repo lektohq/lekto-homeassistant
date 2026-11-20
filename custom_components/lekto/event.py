@@ -6,6 +6,7 @@ from homeassistant.components.event import EventEntity
 from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
+from .capabilities import Capability
 from .entity import LektoEntity
 from .stream import signal
 
@@ -31,8 +32,9 @@ async def async_setup_entry(
     entry: LektoConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add the instance's document event."""
-    async_add_entities([LektoDocumentEvent(entry.runtime_data)])
+    """Add the instance's document event, if the token may follow the household's documents."""
+    if Capability.EVENTS in entry.runtime_data.capabilities:
+        async_add_entities([LektoDocumentEvent(entry.runtime_data)])
 
 
 class LektoDocumentEvent(LektoEntity, EventEntity):
