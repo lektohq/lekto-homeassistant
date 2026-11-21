@@ -10,6 +10,6 @@
   "issue_tracker": "https://github.com/lektohq/lekto-homeassistant/issues",
   "loggers": ["pylekto"],
   "quality_scale": "platinum",
-  "requirements": ["pylekto==0.4.0"],
+  "requirements": ["pylekto==0.3.1"],
   "version": "0.0.0"
 }
