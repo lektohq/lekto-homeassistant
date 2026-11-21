@@ -20,7 +20,7 @@ dev = [
     "covdefaults>=2.3.0",
     "mypy>=2.4.1",
     "prek>=0.5.9",
-    "pylekto>=0.4.0",
+    "pylekto>=0.3.1",
     "pytest-cov>=7.1.0",
     # Home Assistant with the fixtures of its own tests, pinned to one release of it.
     "pytest-homeassistant>=2026.11.0",
