@@ -16,7 +16,7 @@ newer. The repository is decided in `.knowledge/decisions/2026-11-19-homeassista
 | `config/` | The Home Assistant of `script/develop`: only `configuration.yaml` is in git |
 | `script/` | `setup` (once: dependencies, Git hooks), `bootstrap` (every start of the devcontainer: dependencies), `develop` (Home Assistant with the integration on port 8123) |
 | `.devcontainer/`, `Dockerfile.dev` | Devcontainer: Python 3.14, uv, gh, Claude Code; the virtual environment lives in `/home/vscode/.local/dev-venv` |
-| `.github/` | Workflows (`ci.yml`, `release.yml`, Release Drafter, labels, stale, lock), labels, templates, `scripts/` (the test of the action pins) |
+| `.github/` | Workflows (`ci.yml`, `release.yml`, `site.yml` (rebuilds lekto.dev on a release), Release Drafter, labels, stale, lock), labels, templates, `scripts/` (the test of the action pins) |
 | `.knowledge/` | The knowledge in German as small notes with frontmatter; start with `INDEX.md` and `README.md`. A checkout of the private repository `lektohq/lekto-knowledge`, shared with lekto and pylekto and ignored by this one (see "Working style") |
 
 ## Commands
