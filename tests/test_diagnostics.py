@@ -44,8 +44,8 @@ async def test_diagnostics(
     for secret in (TOKEN, URL, INSTANCE_ID, "homeassistant", "Home Assistant"):
         assert secret not in text, secret
     assert diagnostics["lekto"] == {
-        "lekto_version": "0.17.0",
-        "api_version": "0.3",
+        "lekto_version": "0.17.3",
+        "api_version": "0.9",
         "capabilities": ["diagnostics", "documents", "events", "mail", "names", "spaces", "upload"],
         "rights": [
             "admin:count_all",

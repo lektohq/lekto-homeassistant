@@ -32,7 +32,7 @@ talks to Lekto's REST API in the local network through
 ## Requirements
 
 - Home Assistant 2026.11 or newer
-- Lekto 0.17 (its API 0.3), reachable from Home Assistant
+- Lekto 0.17.3 (its API 0.9), reachable from Home Assistant
 - An admin account in Lekto, to make the API token
 
 ## Installation

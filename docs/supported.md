@@ -2,7 +2,7 @@
 
 ## Lekto
 
-This release of the integration works with Lekto 0.17 (its API 0.3). While Lekto is in beta, every change of its API raises that version, and each release of the integration speaks
+This release of the integration works with Lekto 0.17.3 (its API 0.9). While Lekto is in beta, every change of its API raises that version, and each release of the integration speaks
 exactly one: after an update of Lekto, update the integration too. When the two do not fit, the
 integration still runs and says what to update ([setup](setup.md#another-version-of-lektos-api)).
 The integration needs only Lekto's address and an API token.

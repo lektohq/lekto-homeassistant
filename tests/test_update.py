@@ -43,7 +43,7 @@ async def test_update_available(
     state = hass.states.get(UPDATE)
     assert state is not None
     assert state.state == STATE_ON
-    assert state.attributes[ATTR_INSTALLED_VERSION] == "0.17.0"
+    assert state.attributes[ATTR_INSTALLED_VERSION] == "0.17.3"
     assert state.attributes[ATTR_LATEST_VERSION] == "0.18.0"
     assert state.attributes["release_url"] == "https://releases.example.com/lekto/v0.18.0"
     assert state.attributes["supported_features"] == 0
@@ -64,7 +64,7 @@ async def test_up_to_date(
     state = hass.states.get(UPDATE)
     assert state is not None
     assert state.state == STATE_OFF
-    assert state.attributes[ATTR_LATEST_VERSION] == "0.17.0"
+    assert state.attributes[ATTR_LATEST_VERSION] == "0.17.3"
     assert state.attributes["release_url"] is None
 
 
@@ -104,7 +104,7 @@ async def test_newest_unknown(
     state = hass.states.get(UPDATE)
     assert state is not None
     assert state.state == STATE_UNKNOWN
-    assert state.attributes[ATTR_INSTALLED_VERSION] == "0.17.0"
+    assert state.attributes[ATTR_INSTALLED_VERSION] == "0.17.3"
     assert state.attributes[ATTR_LATEST_VERSION] is None
 
 

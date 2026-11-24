@@ -31,7 +31,7 @@ def _api(lekto: MagicMock, api_version: str) -> None:
 
 @pytest.mark.parametrize(
     ("api_version", "key"),
-    [("0.9", "api_newer"), ("0.1", "api_older"), ("0.2.1", "api_unknown")],
+    [("0.10", "api_newer"), ("0.1", "api_older"), ("0.2.1", "api_unknown")],
 )
 async def test_repair(
     hass: HomeAssistant,
@@ -54,7 +54,7 @@ async def test_repair(
     assert issue.config_entry_id == config_entry.entry_id
     assert issue.translation_placeholders == {
         "name": "Lekto",
-        "lekto_version": "0.17.0",
+        "lekto_version": "0.17.3",
         "api_version": api_version,
         "integration_api": API_VERSION,
     }
@@ -75,7 +75,7 @@ async def test_gone_once_it_fits(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
     """Set up again with an API that fits, the repair goes; a lost right's repair stays."""
-    _api(lekto, "0.9")
+    _api(lekto, "0.10")
     await _set_up(hass, config_entry)
     issues = ir.async_get(hass)
     assert issues.async_get_issue(DOMAIN, f"{config_entry.entry_id}_api_version") is not None
