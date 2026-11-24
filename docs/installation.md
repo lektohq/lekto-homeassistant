@@ -3,7 +3,7 @@
 ## Requirements
 
 - Home Assistant 2026.11 or newer
-- Lekto 0.17 (its API 0.3), reachable from Home Assistant; while Lekto is in beta, a newer Lekto
+- Lekto 0.17.3 (its API 0.9), reachable from Home Assistant; while Lekto is in beta, a newer Lekto
   may need a newer version of the integration
 - An admin of Lekto, to make the API token ([Setup](setup.md))
 

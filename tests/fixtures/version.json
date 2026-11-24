@@ -1,6 +1,6 @@
 {
-  "lekto_version": "0.17.0",
-  "api_version": "0.3",
+  "lekto_version": "0.17.3",
+  "api_version": "0.9",
   "update_check": true,
   "checked_at": "2026-11-19T07:00:00Z",
   "latest": {
