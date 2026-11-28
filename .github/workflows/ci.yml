@@ -53,7 +53,8 @@ jobs:
       - run: uv sync --locked
       - run: uv run pytest
 
-  # Home Assistant's own check of the integration (manifest, brand, translations, quality scale).
+  # Home Assistant's own check of the integration (manifest, brand, translations, services). It
+  # skips the quality scale of a custom integration: tests/test_quality_scale.py holds that.
   # The image of the release the tests run against; the action home-assistant/actions/hassfest
   # runs the same image, but untagged and from a branch without versions.
   hassfest:
