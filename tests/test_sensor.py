@@ -20,6 +20,7 @@ from pylekto.models import Problem
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.lekto.const import DOMAIN
+from custom_components.lekto.coordinator import LektoData
 
 from .const import INSTANCE_ID, URL, health, inbox_summary, jobs_summary
 
@@ -323,3 +324,11 @@ async def test_no_jobs(
         state = hass.states.get(entity_id)
         assert state is not None
         assert state.state == "0"
+
+
+def test_system_needs_the_right() -> None:
+    """Lekto's own state is there only for the entities that exist with the right to read it."""
+    data = LektoData(inbox=inbox_summary(), documents=0, health=health(), diagnostics=None)
+
+    with pytest.raises(RuntimeError, match="system:read"):
+        assert data.system

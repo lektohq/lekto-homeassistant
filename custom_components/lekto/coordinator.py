@@ -43,16 +43,31 @@ type LektoConfigEntry = ConfigEntry[LektoCoordinator]
 
 
 @dataclass(frozen=True)
+class LektoDiagnostics:
+    """The state of Lekto's jobs and services and its versions: what ``system:read`` opens."""
+
+    jobs: JobsSummaryOut
+    search: SearchStatusOut | None
+    classifier: ClassifierStatusOut | None
+    version: VersionOut
+
+
+@dataclass(frozen=True)
 class LektoData:
-    """The numbers of every user's documents, and the state of Lekto's services and jobs."""
+    """The numbers of every user's documents, and Lekto's own state where the token may read it."""
 
     inbox: InboxSummaryOut
     documents: int
     health: Health
-    jobs: JobsSummaryOut | None
-    search: SearchStatusOut | None
-    classifier: ClassifierStatusOut | None
-    version: VersionOut | None
+    diagnostics: LektoDiagnostics | None
+
+    @property
+    def system(self) -> LektoDiagnostics:
+        """Return Lekto's own state, for the entities that exist only where the token reads it."""
+        if self.diagnostics is None:
+            msg = "Lekto's state is fetched only with the right system:read"
+            raise RuntimeError(msg)
+        return self.diagnostics
 
 
 class LektoCoordinator(DataUpdateCoordinator[LektoData]):
@@ -106,7 +121,7 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
     async def _async_update_data(self) -> LektoData:
         """Fetch the inbox's summary, the count of documents and the state of the services."""
         try:
-            inbox, count, health, (jobs, search, classifier, version) = await asyncio.gather(
+            inbox, count, health, diagnostics = await asyncio.gather(
                 self.client.inbox.summary(all_users=True),
                 self.client.documents.count(all_users=True),
                 self.client.health.get(),
@@ -128,39 +143,28 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
         # A Lekto updated in place may speak another API; setting up again checks it. Only a
         # change between two answers counts: a version other than the one at setup that stays
         # reloads nothing. Replicas of two versions that answer in turn reload on every change.
-        before = self.data.version if self.data else None
+        before = self.data.diagnostics if self.data else None
         if (
-            version is not None
+            diagnostics is not None
             and before is not None
-            and version.lekto_version != before.lekto_version
+            and diagnostics.version.lekto_version != before.version.lekto_version
             and not self._reloading
         ):
             self._reloading = True
             self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
-        return LektoData(
-            inbox=inbox,
-            documents=count.total,
-            health=health,
-            jobs=jobs,
-            search=search,
-            classifier=classifier,
-            version=version,
-        )
+        return LektoData(inbox=inbox, documents=count.total, health=health, diagnostics=diagnostics)
 
-    async def _diagnostics(
-        self,
-    ) -> tuple[
-        JobsSummaryOut | None, SearchStatusOut | None, ClassifierStatusOut | None, VersionOut | None
-    ]:
+    async def _diagnostics(self) -> LektoDiagnostics | None:
         """Fetch the state of the jobs, the services and the versions, if the token may."""
         if Capability.DIAGNOSTICS not in self.capabilities:
-            return None, None, None, None
-        return await asyncio.gather(
+            return None
+        jobs, search, classifier, version = await asyncio.gather(
             self.client.jobs.summary(),
             _unless_missing(self.client.search.status()),
             _unless_missing(self.client.classifier.status()),
             self.client.version.get(),
         )
+        return LektoDiagnostics(jobs=jobs, search=search, classifier=classifier, version=version)
 
 
 async def _unless_missing[T](request: Awaitable[T]) -> T | None:

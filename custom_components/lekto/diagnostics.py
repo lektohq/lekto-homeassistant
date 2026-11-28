@@ -8,6 +8,7 @@ from homeassistant.const import CONF_API_TOKEN, CONF_URL
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+    from pydantic import BaseModel
 
     from .coordinator import LektoConfigEntry
 
@@ -25,6 +26,7 @@ async def async_get_config_entry_diagnostics(
         return {"entry": redacted}
     coordinator = entry.runtime_data
     data = coordinator.data
+    system = data.diagnostics
     return {
         "entry": redacted,
         "lekto": {
@@ -34,12 +36,17 @@ async def async_get_config_entry_diagnostics(
             "capabilities": sorted(coordinator.capabilities),
         },
         "data": {
-            "inbox": data.inbox.model_dump(mode="json"),
+            "inbox": _json(data.inbox),
             "documents": data.documents,
-            "health": data.health.model_dump(mode="json"),
-            "jobs": data.jobs.model_dump(mode="json") if data.jobs else None,
-            "search": data.search.model_dump(mode="json") if data.search else None,
-            "classifier": data.classifier.model_dump(mode="json") if data.classifier else None,
-            "version": data.version.model_dump(mode="json") if data.version else None,
+            "health": _json(data.health),
+            "jobs": _json(system.jobs if system else None),
+            "search": _json(system.search if system else None),
+            "classifier": _json(system.classifier if system else None),
+            "version": _json(system.version if system else None),
         },
     }
+
+
+def _json(model: BaseModel | None) -> dict[str, Any] | None:
+    """Write nothing for what the token may not read or Lekto runs without."""
+    return model.model_dump(mode="json") if model else None

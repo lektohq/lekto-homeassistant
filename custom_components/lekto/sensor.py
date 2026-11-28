@@ -53,8 +53,8 @@ def _health(data: LektoData) -> str | None:
     return HEALTH.get(data.health.status)
 
 
-def _jobs(data: LektoData, count: Callable[[KindSummaryOut], int]) -> int | None:
-    return None if data.jobs is None else sum(count(kind) for kind in data.jobs.kinds)
+def _jobs(data: LektoData, count: Callable[[KindSummaryOut], int]) -> int:
+    return sum(count(kind) for kind in data.system.jobs.kinds)
 
 
 def _count(
@@ -111,7 +111,7 @@ SENSORS: tuple[LektoSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
-        value=lambda data: None if data.jobs is None else data.jobs.last_started_at,
+        value=lambda data: data.system.jobs.last_started_at,
         capability=Capability.DIAGNOSTICS,
     ),
     LektoSensorEntityDescription(
@@ -119,8 +119,8 @@ SENSORS: tuple[LektoSensorEntityDescription, ...] = (
         translation_key="search_queued",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value=lambda data: data.search.queued if data.search else None,
-        available=lambda data: data.search is not None,
+        value=lambda data: data.system.search.queued if data.system.search else None,
+        available=lambda data: data.system.search is not None,
         capability=Capability.DIAGNOSTICS,
     ),
     LektoSensorEntityDescription(
@@ -129,8 +129,8 @@ SENSORS: tuple[LektoSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
-        value=lambda data: data.classifier.since if data.classifier else None,
-        available=lambda data: data.classifier is not None,
+        value=lambda data: data.system.classifier.since if data.system.classifier else None,
+        available=lambda data: data.system.classifier is not None,
         capability=Capability.DIAGNOSTICS,
     ),
 )

@@ -45,15 +45,14 @@ class LektoUpdate(LektoCoordinatorEntity, UpdateEntity):
     @override
     def installed_version(self) -> str | None:
         """Return the version Lekto runs."""
-        version = self.coordinator.data.version
-        return version.lekto_version if version else self.coordinator.lekto_version
+        return self.coordinator.data.system.version.lekto_version
 
     @property
     @override
     def latest_version(self) -> str | None:
         """Return the newest release; unknown while Lekto does not look for releases."""
-        version = self.coordinator.data.version
-        if version is None or not version.update_check or version.checked_at is None:
+        version = self.coordinator.data.system.version
+        if not version.update_check or version.checked_at is None:
             return None
         if version.update_available and version.latest is not None:
             return version.latest.version
@@ -63,7 +62,7 @@ class LektoUpdate(LektoCoordinatorEntity, UpdateEntity):
     @override
     def release_url(self) -> str | None:
         """Return the page of the newest release, while it is not the one installed."""
-        version = self.coordinator.data.version
-        if version is None or not version.update_available or version.latest is None:
+        version = self.coordinator.data.system.version
+        if not version.update_available or version.latest is None:
             return None
         return version.latest.url
