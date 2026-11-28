@@ -19,14 +19,9 @@ from homeassistant.helpers.selector import (
     TextSelectorConfig,
     TextSelectorType,
 )
-from pylekto import (
-    LektoAuthenticationError,
-    LektoError,
-    LektoForbiddenError,
-    LektoResponseError,
-)
+from pylekto import LektoError
 
-from . import create_client
+from . import connect_error, create_client
 from .capabilities import Capability, missing_rights, rights_text
 from .const import CONF_CAPABILITIES, CONF_EVENT_FIELDS, DOMAIN, EVENT_FIELDS, REQUIRED_RIGHTS
 from .names import FIELD_KINDS, NEEDS
@@ -164,15 +159,8 @@ class LektoConfigFlow(ConfigFlow, domain=DOMAIN):
         client = create_client(self.hass, data)
         try:
             me = await client.connect()
-        except LektoAuthenticationError:
-            return "invalid_auth"
-        # An upload token may not even ask who it is.
-        except LektoForbiddenError:
-            return "missing_rights"
-        except LektoResponseError:
-            return "unsupported"
-        except LektoError:
-            return "cannot_connect"
+        except LektoError as err:
+            return connect_error(err)
         except Exception:
             _LOGGER.exception("Unexpected error while connecting")
             return "unknown"
