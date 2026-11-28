@@ -16,3 +16,6 @@ EVENT_FIELDS: Final = ("title", "document_date", "contact", "document_type", "ta
 
 # The lanes Lekto sorts a processed document into, best first.
 LANES: Final = ("green", "yellow", "red")
+
+# Lekto's Retry-After counts for a day at most, as Home Assistant bounds one at a setup.
+RETRY_AFTER_MAX: Final = 86400.0

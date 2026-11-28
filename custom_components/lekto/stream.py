@@ -14,7 +14,7 @@ from pylekto import (
     LektoRateLimitError,
 )
 
-from .const import DOMAIN
+from .const import DOMAIN, RETRY_AFTER_MAX
 
 if TYPE_CHECKING:
     from pylekto.models import EventMessage
@@ -89,7 +89,7 @@ class LektoStream:
                 await coordinator.reload_if_rights_changed()
             except LektoRateLimitError as err:
                 self._lose(err)
-                self._retry = max(self._retry, err.retry_after or 0)
+                self._retry = max(self._retry, min(err.retry_after or 0, RETRY_AFTER_MAX))
             except LektoError as err:
                 self._lose(err)
             else:

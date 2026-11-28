@@ -19,8 +19,8 @@
 - **"Lekto (…): … off" under Repairs.** The token of the entry named in brackets lost a right;
   see [a right gone](setup.md#a-right-gone).
 - **"Lekto (…): update …" or "Lekto (…): unreadable API version" under Repairs.** Lekto and the
-  integration speak different versions of the API; see
-  [another version of Lekto's API](setup.md#another-version-of-lektos-api).
+  integration speak different versions of the API; see [another version of Lekto's
+  API](setup.md#another-version-of-lektos-api).
 - **Home Assistant asks for a new token.** Lekto no longer accepts the token or it lost a required
   right; enter a new one ([a new token](setup.md#a-new-token)).
 - **The entry fails with "another Lekto instance".** The address now leads to another instance:
@@ -31,9 +31,9 @@
   stream; the log says "Lost the event stream" once, with the reason, and "The event stream is
   back" once it flows again. The integration connects again by itself: five seconds after a stream
   that flowed for a while, twice as long after each try that fails or breaks off at once, up to
-  five minutes, and longer when Lekto asks it to. If it comes and goes, a firewall or proxy
-  between Home Assistant and Lekto cuts long connections; if it stays unavailable while the
-  sensors work, a proxy holds the stream back instead of passing it on as it comes.
+  five minutes, and longer when Lekto asks it to, a day at most. If it comes and goes, a firewall
+  or proxy between Home Assistant and Lekto cuts long connections; if it stays unavailable while
+  the sensors work, a proxy holds the stream back instead of passing it on as it comes.
 - **An automation misses a document event.** Let its trigger skip only changes from
   `unavailable`, not from `unknown` ([document event](events.md)).
 - **An action fails with "lacks the rights".** Each action needs rights of its own

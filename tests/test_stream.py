@@ -19,7 +19,7 @@ from pylekto import (
 )
 from pylekto.models import Problem
 
-from custom_components.lekto.const import DOMAIN
+from custom_components.lekto.const import DOMAIN, RETRY_AFTER_MAX
 from custom_components.lekto.coordinator import LektoCoordinator
 from custom_components.lekto.stream import RETRY_FIRST, RETRY_LAST, connection_signal, signal
 
@@ -255,17 +255,24 @@ async def test_flowing_stream_resets_wait(
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 
+@pytest.mark.parametrize(
+    ("retry_after", "waited"), [(42.0, 42.0), (864000.0, RETRY_AFTER_MAX), (None, RETRY_FIRST)]
+)
 async def test_rate_limited(
-    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    retry_after: float | None,
+    waited: float,
 ) -> None:
-    """Lekto's Retry-After stretches the wait."""
+    """Lekto's Retry-After stretches the wait, for a day at most."""
     lekto.events.listen.side_effect = streams(
-        LektoRateLimitError(Problem(title="Too Many Requests", status=429), 42.0),
+        LektoRateLimitError(Problem(title="Too Many Requests", status=429), retry_after),
         [event("document.filed")],
     )
 
     with patch("custom_components.lekto.stream.sleep", AsyncMock()) as sleep:
         await _set_up(hass, config_entry)
 
-    assert [call.args[0] for call in sleep.await_args_list] == [42.0]
+    assert [call.args[0] for call in sleep.await_args_list] == [waited]
     assert await hass.config_entries.async_unload(config_entry.entry_id)

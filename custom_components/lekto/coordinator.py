@@ -4,7 +4,6 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
-from math import inf
 from typing import TYPE_CHECKING, Final, override
 
 from homeassistant.config_entries import ConfigEntry
@@ -19,7 +18,7 @@ from pylekto import (
 )
 
 from .capabilities import Capability, capabilities, missing_rights
-from .const import DOMAIN
+from .const import DOMAIN, RETRY_AFTER_MAX
 from .names import LektoNames
 from .stream import LektoStream
 
@@ -156,13 +155,12 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
         return LektoData(inbox=inbox, documents=count.total, health=health, diagnostics=diagnostics)
 
     def _wait(self, err: LektoError) -> float | None:
-        """Take Lekto's wait only where it can neither hasten the fetches nor end them."""
+        """Take Lekto's wait only where it cannot hasten the fetches, and for a day at most."""
         if not isinstance(err, LektoRateLimitError) or err.retry_after is None:
             return None
-        # At setup Home Assistant bounds the wait; later it stands in place of the interval.
-        if not self.data or UPDATE_INTERVAL.total_seconds() < err.retry_after < inf:
-            return err.retry_after
-        return None
+        wait = min(err.retry_after, RETRY_AFTER_MAX)
+        # At setup the wait only delays the next try; later it stands in place of the interval.
+        return wait if not self.data or wait > UPDATE_INTERVAL.total_seconds() else None
 
     async def _diagnostics(self) -> LektoDiagnostics | None:
         """Fetch the state of the jobs, the services and the versions, if the token may."""
