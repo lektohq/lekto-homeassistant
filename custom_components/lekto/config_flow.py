@@ -121,10 +121,9 @@ class LektoConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def _check(self, data: Mapping[str, Any]) -> dict[str, str]:
-        """Connect with ``data`` and return the error to show; none if the token will do.
+        """Connect with ``data`` and return the error to show, if any.
 
-        The instance comes before the rights: one that is set up already, or another one than
-        the entry's, ends the flow whatever its token may do.
+        The instance comes before the rights: a wrong one ends the flow whatever its token may do.
         """
         client = create_client(self.hass, data)
         try:

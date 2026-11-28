@@ -143,9 +143,8 @@ class LektoNames:
                 self._failed.pop(kind, None)
                 _LOGGER.debug("Fetched %d names of kind %s", len(items), kind)
             if kind not in self._names:
-                # Until Lekto is asked again its refusal stays the answer: no names at all
-                # would call every name unknown.
-                raise self._failed[kind][1]
+                # Its refusal stays the answer for now: no names would call every name unknown.
+                raise self._failed[kind][1].with_traceback(None)
             return self._names[kind]
 
     def _lists(self) -> dict[Kind, Callable[[], Awaitable[Sequence[_Named]]]]:

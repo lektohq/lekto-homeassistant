@@ -65,6 +65,14 @@ class LektoStream:
         Lekto sends no events missed while the stream was down, so the numbers are fetched again
         before each new connection.
         """
+        try:
+            await self._listen()
+        except Exception:
+            # A bug ends the listening for good; the entity must not go on promising events.
+            self._lose("an unexpected error")
+            raise
+
+    async def _listen(self) -> None:
         coordinator = self._coordinator
         while True:
             try:
@@ -90,7 +98,7 @@ class LektoStream:
 
     @callback
     def _flows(self) -> None:
-        """Only a stream that flows is back, and starts the wait short again: an answer is none."""
+        """Take pylekto's sign that the stream flows: only now is it back, and the wait short."""
         self._retry = RETRY_FIRST
         if self._lost:
             _LOGGER.info("The event stream is back")

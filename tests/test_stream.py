@@ -1,7 +1,7 @@
 """The event stream: events pass on, the numbers follow, the stream comes back."""
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -21,14 +21,16 @@ from pylekto.models import Problem
 
 from custom_components.lekto.const import DOMAIN
 from custom_components.lekto.coordinator import LektoCoordinator
-from custom_components.lekto.stream import RETRY_FIRST, RETRY_LAST, signal
+from custom_components.lekto.stream import RETRY_FIRST, RETRY_LAST, connection_signal, signal
 
 from . import setup_integration
-from .const import event, streams
+from .const import event, me, streams
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
     from unittest.mock import MagicMock
 
+    from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
     from pylekto.models import EventMessage
     from pytest_homeassistant.common import MockConfigEntry
@@ -133,10 +135,21 @@ async def test_every_loss_logged(
     "lost", [LektoConnectionError("refused"), LektoTimeoutError("no answer in time")]
 )
 async def test_reconnect_waits_at_most(
-    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry, lost: LektoError
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+    lost: LektoError,
 ) -> None:
     """Each try that fails waits twice as long, however long the try took, up to the longest."""
-    lekto.events.listen.side_effect = streams(*([lost] * 9), [event("document.filed")])
+    failing = streams(*([lost] * 9), [event("document.filed")])
+
+    def listen(**arguments: Any) -> AsyncIterator[EventMessage]:
+        # pylekto gives a connection up after ten seconds: longer than the first wait.
+        freezer.tick(10)
+        return failing(**arguments)
+
+    lekto.events.listen.side_effect = listen
 
     with patch("custom_components.lekto.stream.sleep", AsyncMock()) as sleep:
         await _set_up(hass, config_entry)
@@ -148,24 +161,49 @@ async def test_reconnect_waits_at_most(
 
 
 async def test_refused(
-    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """A token Lekto stops accepting ends the stream for good and asks for a new one."""
+    """A token Lekto does not accept ends the stream for good, logged, and asks for a new one."""
     lekto.events.listen.side_effect = streams(
-        [], LektoAuthenticationError(Problem(title="Unauthorized", status=401))
+        LektoAuthenticationError(Problem(title="Unauthorized", status=401))
     )
 
-    with patch("custom_components.lekto.stream.sleep", AsyncMock()):
+    with caplog.at_level(logging.INFO, "custom_components.lekto.stream"):
         await _set_up(hass, config_entry)
 
     assert config_entry.state is ConfigEntryState.LOADED
-    assert lekto.events.listen.call_count == 2
-    assert not config_entry.runtime_data.stream.connected
+    assert lekto.events.listen.call_count == 1
+    assert _logged(caplog) == ["Lost the event stream: 401 Unauthorized"]
     state = hass.states.get("event.lekto_document")
     assert state is not None
     assert state.state == STATE_UNAVAILABLE
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert [flow["context"]["source"] for flow in flows] == [SOURCE_REAUTH]
+
+
+async def test_unexpected_error(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """An error that is none of pylekto's ends the listening; the stream counts as lost then."""
+    lekto.connect.return_value = me(rights=["admin:count_all", "documents:count"])
+    lekto.events.listen.side_effect = streams([RuntimeError("a bug")])
+    await setup_integration(hass, config_entry)
+    stream = config_entry.runtime_data.stream
+    seen: list[bool] = []
+
+    @callback
+    def note() -> None:
+        seen.append(stream.connected)
+
+    async_dispatcher_connect(hass, connection_signal(config_entry), note)
+
+    with pytest.raises(RuntimeError, match="a bug"):
+        await stream.listen()
+
+    assert seen == [True, False]
 
 
 async def test_flowing_stream_resets_wait(

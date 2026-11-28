@@ -612,6 +612,8 @@ def test_services_yaml_in_step() -> None:
         for action, schema in SCHEMAS.items()
     }
     listed = described["list_documents"]["fields"]
+    counted = described["count"]["fields"]
+    assert counted == {name: listed[name] for name in counted}
     assert described["upload"]["fields"]["file"]["selector"]["media"]["accept"] == ACCEPT
     assert listed["lane"]["selector"]["select"]["options"] == LANE_FILTERS
     assert listed["fields"]["selector"]["select"]["options"] == LIST_FIELDS
