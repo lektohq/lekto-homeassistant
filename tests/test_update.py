@@ -147,7 +147,7 @@ async def test_other_version_than_at_setup(
     config_entry: MockConfigEntry,
     freezer: FrozenDateTimeFactory,
 ) -> None:
-    """Replicas of two versions behind one address do not reload the entry again and again."""
+    """A version other than the one Lekto named at setup, and that stays, reloads nothing."""
     lekto.version.get.return_value = version(lekto_version="0.18.0")
 
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:

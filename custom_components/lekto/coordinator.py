@@ -129,7 +129,8 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
                 translation_placeholders={"error": str(err)},
             ) from err
         # A Lekto updated in place may speak another API; setting up again checks it. Only a
-        # change between two answers counts, so replicas of two versions cannot reload in a loop.
+        # change between two answers counts: a version other than the one at setup that stays
+        # reloads nothing. Replicas of two versions that answer in turn reload on every change.
         before = self.data.version if self.data else None
         if (
             version is not None
