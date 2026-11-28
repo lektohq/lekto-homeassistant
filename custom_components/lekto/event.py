@@ -10,7 +10,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from pylekto import LektoError
 
 from .capabilities import Capability
-from .const import CONF_EVENT_FIELDS, EVENT_FIELDS
+from .const import CONF_EVENT_FIELDS, EVENT_FIELDS, LANES
 from .entity import LektoEntity
 from .names import document_names
 from .stream import connection_signal, signal
@@ -36,7 +36,7 @@ EVENT_TYPES: Final = {
     "document.review_required": "review_required",
 }
 # Lekto asks for a review only of uncertain (yellow) or failed (red) documents.
-LANES: Final = frozenset({"yellow", "red"})
+REVIEW_LANES: Final = frozenset(LANES) - {"green"}
 
 
 async def async_setup_entry(
@@ -105,7 +105,7 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
                         self._entry.runtime_data, event.document_id, wanted
                     )
             lane = (event.model_extra or {}).get("lane")
-            if lane in LANES:
+            if lane in REVIEW_LANES:
                 attributes["lane"] = lane
             self._trigger_event(event_type, attributes)
             self.async_write_ha_state()

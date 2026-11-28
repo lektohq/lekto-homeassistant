@@ -12,6 +12,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import EntityCategory
 
 from .capabilities import Capability
+from .const import LANES
 from .entity import LektoCoordinatorEntity
 
 if TYPE_CHECKING:
@@ -28,7 +29,6 @@ if TYPE_CHECKING:
 # The coordinator fetches for every entity at once.
 PARALLEL_UPDATES = 0
 
-LANES = ["green", "yellow", "red"]
 # Lekto's "unavailable" is Home Assistant's name for an entity without a state.
 HEALTH = {"ok": "ok", "degraded": "degraded", "unavailable": "down"}
 
@@ -83,7 +83,7 @@ SENSORS: tuple[LektoSensorEntityDescription, ...] = (
         key="inbox_worst_lane",
         translation_key="inbox_worst_lane",
         device_class=SensorDeviceClass.ENUM,
-        options=LANES,
+        options=list(LANES),
         value=_worst_lane,
     ),
     _count("documents", lambda data: data.documents),

@@ -13,3 +13,6 @@ CONF_CAPABILITIES: Final = "capabilities"
 # What the document event may carry beside the document's id; the user picks in the options.
 CONF_EVENT_FIELDS: Final = "event_fields"
 EVENT_FIELDS: Final = ("title", "document_date", "contact", "document_type", "tags", "space")
+
+# The lanes Lekto sorts a processed document into, best first.
+LANES: Final = ("green", "yellow", "red")

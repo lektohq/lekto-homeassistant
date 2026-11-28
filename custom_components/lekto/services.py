@@ -21,7 +21,7 @@ from homeassistant.helpers.selector import MediaSelector
 from pylekto import LektoConflictError, LektoError, LektoValidationError
 
 from .capabilities import RIGHTS, Capability, rights_text
-from .const import DOMAIN
+from .const import DOMAIN, LANES
 from .names import NEEDS, Kind, document_names
 
 if TYPE_CHECKING:
@@ -48,7 +48,8 @@ CONF_DATE_TO = "date_to"
 CONF_LIMIT = "limit"
 CONF_FIELDS = "fields"
 
-LANES = ["green", "yellow", "red", "processing"]
+# A document Lekto still processes is in no lane yet; the filter takes it as one.
+LANE_FILTERS = [*LANES, "processing"]
 LIST_FIELDS = ["lane", "contact", "document_type", "tags", "space"]
 
 # Only what Lekto processes is offered, so the picker shows no file Lekto would refuse.
@@ -65,7 +66,7 @@ UPLOAD_SCHEMA = probatio.Schema(
 FILTERS = {
     probatio.Required(CONF_CONFIG_ENTRY_ID): str,
     probatio.Optional(CONF_INBOX): cv.boolean,
-    probatio.Optional(CONF_LANE): probatio.All(cv.ensure_list, [probatio.In(LANES)]),
+    probatio.Optional(CONF_LANE): probatio.All(cv.ensure_list, [probatio.In(LANE_FILTERS)]),
     probatio.Optional(CONF_CONTACT): probatio.All(cv.ensure_list, [cv.string]),
     probatio.Optional(CONF_DOCUMENT_TYPE): probatio.All(cv.ensure_list, [cv.string]),
     probatio.Optional(CONF_TAG): probatio.All(cv.ensure_list, [cv.string]),
