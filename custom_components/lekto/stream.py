@@ -2,6 +2,7 @@
 
 import logging
 from asyncio import sleep
+from time import monotonic
 from typing import TYPE_CHECKING, Final
 
 from homeassistant.core import callback
@@ -57,6 +58,7 @@ class LektoStream:
         self._coordinator = coordinator
         self._retry = RETRY_FIRST
         self._lost = False
+        self._since = 0.0
         self.connected = False
 
     async def listen(self) -> None:
@@ -98,8 +100,8 @@ class LektoStream:
 
     @callback
     def _flows(self) -> None:
-        """Take pylekto's sign that the stream flows: only now is it back, and the wait short."""
-        self._retry = RETRY_FIRST
+        """Take pylekto's sign that the stream flows: an answer alone would not show it."""
+        self._since = monotonic()
         if self._lost:
             _LOGGER.info("The event stream is back")
             self._lost = False
@@ -107,6 +109,9 @@ class LektoStream:
 
     def _lose(self, reason: object) -> None:
         """One line in the log for each loss, however many tries it takes to come back."""
+        # Only a stream that flowed a while worked; one that breaks off at once waits longer.
+        if self.connected and monotonic() - self._since > RETRY_FIRST:
+            self._retry = RETRY_FIRST
         if not self._lost:
             _LOGGER.info("Lost the event stream: %s", reason)
             self._lost = True

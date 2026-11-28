@@ -60,8 +60,11 @@ fails on a tag.
   `ConfigEntry`. A new entry is titled by the host of its address; the device is always "Lekto",
   so entity ids do not depend on the title.
 - The document event follows the event stream, not the numbers: unavailable from a loss until
-  pylekto's `on_connected` (the stream's first line), which also logs the return and starts the
-  wait before the next try short again. Entities of the numbers build on
+  pylekto's `on_connected` (the stream's first line), which also logs the return; an event taken
+  before a loss still shows first. The wait before the next try starts short again only after a
+  stream that flowed for more than five seconds. The documented triggers skip changes from
+  `unavailable` alone: Home Assistant restores no time of the last event from an entity that
+  was unavailable, so the next event comes from `unknown`. Entities of the numbers build on
   `LektoCoordinatorEntity`; what `system:read` opens is read through `LektoData.system`.
 - What stands in two places is held equal by a test: `services.yaml` and the selectors' texts
   with the schemas and constants of `services.py`, `ENTITY_KEYS` with the sensors.

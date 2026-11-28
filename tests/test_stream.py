@@ -207,17 +207,29 @@ async def test_unexpected_error(
 
 
 async def test_flowing_stream_resets_wait(
-    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
 ) -> None:
-    """After a stream that flowed, the wait starts short again; a stream that ends flowed too."""
+    """After a stream that flowed a while the wait starts short again, not after one that broke."""
     lost = LektoConnectionError("refused")
-    lekto.events.listen.side_effect = streams(lost, lost, [lost], lost, [], [])
+    lekto.events.listen.side_effect = streams(
+        lost, lost, [60.0, lost], [RETRY_FIRST, lost], [lost], [], [], passes=freezer.tick
+    )
 
     with patch("custom_components.lekto.stream.sleep", AsyncMock()) as sleep:
         await _set_up(hass, config_entry)
 
     waits = [call.args[0] for call in sleep.await_args_list]
-    assert waits == [RETRY_FIRST, RETRY_FIRST * 2, RETRY_FIRST, RETRY_FIRST * 2, RETRY_FIRST]
+    assert waits == [
+        RETRY_FIRST,
+        RETRY_FIRST * 2,
+        RETRY_FIRST,
+        RETRY_FIRST * 2,
+        RETRY_FIRST * 4,
+        RETRY_FIRST * 8,
+    ]
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 
