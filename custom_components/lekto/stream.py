@@ -2,9 +2,9 @@
 
 import logging
 from asyncio import sleep
-from time import monotonic
 from typing import TYPE_CHECKING, Final
 
+from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from pylekto import (
     LektoAuthenticationError,
@@ -16,10 +16,9 @@ from pylekto import (
 from .const import DOMAIN
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
     from pylekto.models import EventMessage
 
-    from .coordinator import LektoConfigEntry
+    from .coordinator import LektoConfigEntry, LektoCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,47 +44,56 @@ def signal(entry: LektoConfigEntry) -> str:
     return f"{DOMAIN}_{entry.entry_id}_event"
 
 
-async def listen(hass: HomeAssistant, entry: LektoConfigEntry) -> None:
-    """Listen to Lekto's events until the entry unloads, connecting again when the stream ends.
+class LektoStream:
+    """Lekto's events of one entry: passed on as they come, the stream connected again when lost."""
 
-    Lekto sends no events missed while the stream was down, so the numbers are fetched again
-    before each new connection.
-    """
-    coordinator = entry.runtime_data
-    retry = RETRY_FIRST
-    lost = False
-    while True:
-        opened = monotonic()
-        try:
-            async for event in coordinator.client.events.listen():
-                if lost:
-                    _LOGGER.info("The event stream is back")
-                    lost = False
-                _handle(hass, entry, event)
-        except LektoAuthenticationError:
-            entry.async_start_reauth(hass)
-            return
-        except LektoForbiddenError as err:
-            await coordinator.reload_if_rights_changed()
-            if not lost:
-                _LOGGER.info("Lost the event stream, connecting again: %s", err)
-                lost = True
-        except LektoRateLimitError as err:
-            retry = max(retry, err.retry_after or 0)
-        except LektoError as err:
-            if not lost:
-                _LOGGER.info("Lost the event stream, connecting again: %s", err)
-                lost = True
-        # A connection that held a while worked; only quick failures wait longer each time.
-        if monotonic() - opened > RETRY_FIRST:
-            retry = RETRY_FIRST
-        await sleep(retry)
-        retry = min(retry * 2, RETRY_LAST)
-        await coordinator.async_request_refresh()
+    def __init__(self, coordinator: LektoCoordinator) -> None:
+        """Start without a connection; ``listen`` makes it."""
+        self._coordinator = coordinator
+        self._retry = RETRY_FIRST
 
+    async def listen(self) -> None:
+        """Listen to Lekto's events until the entry unloads, connecting again when the stream ends.
 
-def _handle(hass: HomeAssistant, entry: LektoConfigEntry, event: EventMessage) -> None:
-    """Every event goes out, so that entities need no stream of their own."""
-    async_dispatcher_send(hass, signal(entry), event)
-    if event.type in COUNTED:
-        entry.async_create_task(hass, entry.runtime_data.async_request_refresh())
+        Lekto sends no events missed while the stream was down, so the numbers are fetched again
+        before each new connection.
+        """
+        coordinator = self._coordinator
+        lost = False
+        while True:
+            try:
+                async for event in coordinator.client.events.listen(on_connected=self._flows):
+                    if lost:
+                        _LOGGER.info("The event stream is back")
+                        lost = False
+                    self._handle(event)
+            except LektoAuthenticationError:
+                coordinator.config_entry.async_start_reauth(coordinator.hass)
+                return
+            except LektoForbiddenError as err:
+                await coordinator.reload_if_rights_changed()
+                if not lost:
+                    _LOGGER.info("Lost the event stream, connecting again: %s", err)
+                    lost = True
+            except LektoRateLimitError as err:
+                self._retry = max(self._retry, err.retry_after or 0)
+            except LektoError as err:
+                if not lost:
+                    _LOGGER.info("Lost the event stream, connecting again: %s", err)
+                    lost = True
+            await sleep(self._retry)
+            self._retry = min(self._retry * 2, RETRY_LAST)
+            await coordinator.async_request_refresh()
+
+    @callback
+    def _flows(self) -> None:
+        """Only a stream that flows starts the wait short again, not one that merely answered."""
+        self._retry = RETRY_FIRST
+
+    def _handle(self, event: EventMessage) -> None:
+        """Every event goes out, so that entities need no stream of their own."""
+        coordinator = self._coordinator
+        entry = coordinator.config_entry
+        async_dispatcher_send(coordinator.hass, signal(entry), event)
+        if event.type in COUNTED:
+            entry.async_create_task(coordinator.hass, coordinator.async_request_refresh())

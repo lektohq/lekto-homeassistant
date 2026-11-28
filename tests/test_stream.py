@@ -10,7 +10,9 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from pylekto import (
     LektoAuthenticationError,
     LektoConnectionError,
+    LektoError,
     LektoRateLimitError,
+    LektoTimeoutError,
 )
 from pylekto.models import Problem
 
@@ -86,11 +88,14 @@ async def test_reconnect(
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 
+@pytest.mark.parametrize(
+    "lost", [LektoConnectionError("refused"), LektoTimeoutError("no answer in time")]
+)
 async def test_reconnect_waits_at_most(
-    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry, lost: LektoError
 ) -> None:
-    """A stream that ends is connected again; the wait stops growing at its longest."""
-    lekto.events.listen.side_effect = streams(*([[]] * 9), [event("document.filed")])
+    """Each try that fails waits twice as long, however long the try took, up to the longest."""
+    lekto.events.listen.side_effect = streams(*([lost] * 9), [event("document.filed")])
 
     with patch("custom_components.lekto.stream.sleep", AsyncMock()) as sleep:
         await _set_up(hass, config_entry)
@@ -117,23 +122,18 @@ async def test_refused(
     assert [flow["context"]["source"] for flow in flows] == [SOURCE_REAUTH]
 
 
-async def test_held_connection_resets_wait(
+async def test_flowing_stream_resets_wait(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
-    """After a connection that held a while, the wait starts short again."""
+    """After a stream that flowed, the wait starts short again; a stream that ends flowed too."""
     lost = LektoConnectionError("refused")
-    lekto.events.listen.side_effect = streams(lost, lost, lost, [event("document.filed")])
-    # Each try reads the clock twice; the third connection held for a minute.
-    clock = iter([0.0, 0.0, 0.0, 0.0, 0.0, 60.0, 60.0])
+    lekto.events.listen.side_effect = streams(lost, lost, [lost], lost, [], [])
 
-    with (
-        patch("custom_components.lekto.stream.sleep", AsyncMock()) as sleep,
-        patch("custom_components.lekto.stream.monotonic", lambda: next(clock, 60.0)),
-    ):
+    with patch("custom_components.lekto.stream.sleep", AsyncMock()) as sleep:
         await _set_up(hass, config_entry)
 
     waits = [call.args[0] for call in sleep.await_args_list]
-    assert waits == [RETRY_FIRST, RETRY_FIRST * 2, RETRY_FIRST]
+    assert waits == [RETRY_FIRST, RETRY_FIRST * 2, RETRY_FIRST, RETRY_FIRST * 2, RETRY_FIRST]
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 

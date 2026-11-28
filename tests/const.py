@@ -94,16 +94,25 @@ def event(type_: str, **fields: object) -> EventMessage:
 
 
 def streams(
-    *answers: list[EventMessage] | Exception,
+    *answers: list[EventMessage | Exception] | Exception,
 ) -> Callable[..., AsyncIterator[EventMessage]]:
-    """Return what ``events.listen`` does on each call: events, then stay open; or raise."""
+    """Return what ``events.listen`` does on each call.
+
+    An exception stands for a stream that does not start. A list stands for one that flows: its
+    events come, an exception in it breaks the stream off; the last stream stays open.
+    """
     remaining = list(answers)
 
-    async def listen(**_filters: object) -> AsyncIterator[EventMessage]:
+    async def listen(
+        *, on_connected: Callable[[], None], **_filters: object
+    ) -> AsyncIterator[EventMessage]:
         answer = remaining.pop(0) if remaining else []
         if isinstance(answer, Exception):
             raise answer
+        on_connected()
         for message in answer:
+            if isinstance(message, Exception):
+                raise message
             yield message
         if not remaining:
             await asyncio.Event().wait()

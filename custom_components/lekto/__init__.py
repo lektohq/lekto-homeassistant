@@ -23,7 +23,6 @@ from .const import DOMAIN, REQUIRED_RIGHTS
 from .coordinator import LektoConfigEntry, LektoCoordinator
 from .repairs import note_issues
 from .services import async_setup_services
-from .stream import listen
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -89,7 +88,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_create_background_task(hass, coordinator.names.load(), f"{DOMAIN} names")
     if Capability.EVENTS in given:
-        entry.async_create_background_task(hass, listen(hass, entry), f"{DOMAIN} event stream")
+        entry.async_create_background_task(
+            hass, coordinator.stream.listen(), f"{DOMAIN} event stream"
+        )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> None:

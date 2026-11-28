@@ -19,6 +19,7 @@ from pylekto import (
 from .capabilities import Capability, capabilities, missing_rights
 from .const import DOMAIN
 from .names import LektoNames
+from .stream import LektoStream
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -81,6 +82,7 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
         self.rights = sorted(me.rights)
         self.capabilities = given
         self.names = LektoNames(client, given)
+        self.stream = LektoStream(self)
         self._reloading = False
 
     async def reload_if_rights_changed(self) -> None:
