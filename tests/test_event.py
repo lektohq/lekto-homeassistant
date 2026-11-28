@@ -16,6 +16,7 @@ from pytest_homeassistant.common import mock_restore_cache_with_extra_data
 from custom_components.lekto.const import CONF_EVENT_FIELDS, EVENT_FIELDS
 from custom_components.lekto.event import LektoDocumentEvent, document_fields
 
+from . import setup_integration
 from .const import DOCUMENT_ID, document, event, me, streams
 
 if TYPE_CHECKING:
@@ -29,19 +30,13 @@ pytestmark = pytest.mark.stream
 ENTITY_ID = "event.lekto_document"
 
 
-async def _set_up(hass: HomeAssistant, config_entry: MockConfigEntry) -> None:
-    config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
-
-
 async def test_no_event_yet(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
     """Before any event the entity offers the three kinds and has no state."""
     lekto.events.listen.side_effect = streams([])
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(ENTITY_ID)
     assert state is not None
@@ -79,7 +74,7 @@ async def test_event(
     """Each kind triggers with the document's id, and the lane when Lekto names a known one."""
     lekto.events.listen.side_effect = streams([message])
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(ENTITY_ID)
     assert state is not None
@@ -102,7 +97,7 @@ async def test_lane_named_by_the_model(
     message = event("document.review_required", lane="red")
     lekto.events.listen.side_effect = streams([WithLane.model_validate(message.model_dump())])
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(ENTITY_ID)
     assert state is not None
@@ -118,7 +113,7 @@ async def test_other_events(
         [event("document.node_started", node="ocr", run=1), event("classifier.trained", number=2)]
     )
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(ENTITY_ID)
     assert state is not None
@@ -141,7 +136,7 @@ async def test_event_while_numbers_fail(
         await asyncio.Event().wait()
 
     lekto.events.listen.side_effect = listen
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
     lekto.inbox.summary.side_effect = LektoConnectionError("refused")
     await config_entry.runtime_data.async_refresh()
     numbers = hass.states.get("sensor.lekto_inbox_open")
@@ -174,7 +169,7 @@ async def test_unavailable_without_stream(
         again.clear()
 
     with patch("custom_components.lekto.stream.sleep", wait):
-        await _set_up(hass, config_entry)
+        await setup_integration(hass, config_entry)
         never_connected = hass.states.get(ENTITY_ID)
         again.set()
         await hass.async_block_till_done()
@@ -211,7 +206,7 @@ async def test_restored(
         ],
     )
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(ENTITY_ID)
     assert state is not None
@@ -226,8 +221,7 @@ async def _set_up_with_fields(
 ) -> None:
     config_entry.add_to_hass(hass)
     hass.config_entries.async_update_entry(config_entry, options={CONF_EVENT_FIELDS: fields})
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_integration(hass, config_entry)
 
 
 async def test_fields(hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry) -> None:

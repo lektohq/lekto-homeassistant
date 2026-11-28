@@ -23,6 +23,7 @@ from custom_components.lekto.const import DOMAIN
 from custom_components.lekto.coordinator import LektoCoordinator
 from custom_components.lekto.stream import RETRY_FIRST, RETRY_LAST, signal
 
+from . import setup_integration
 from .const import event, streams
 
 if TYPE_CHECKING:
@@ -52,8 +53,7 @@ async def _set_up(hass: HomeAssistant, config_entry: MockConfigEntry) -> list[Ev
         received.append(message)
 
     async_dispatcher_connect(hass, signal(config_entry), take)
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_integration(hass, config_entry)
     return received
 
 

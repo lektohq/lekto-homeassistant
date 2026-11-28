@@ -16,6 +16,7 @@ from pylekto.models import Problem
 
 from custom_components.lekto.const import DOMAIN
 
+from . import setup_integration
 from .const import NEW_URL, TOKEN, me
 
 if TYPE_CHECKING:
@@ -39,9 +40,7 @@ async def test_setup_and_unload(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
     """The entry connects, keeps the client in its coordinator and unloads again."""
-    config_entry.add_to_hass(hass)
-
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
     assert config_entry.state is ConfigEntryState.LOADED
     assert config_entry.runtime_data.client is lekto
 
@@ -85,9 +84,8 @@ async def test_setup_error(
 ) -> None:
     """A revoked token or a server that is no Lekto fails the setup; an unreachable one retries."""
     lekto.connect.side_effect = error
-    config_entry.add_to_hass(hass)
 
-    await hass.config_entries.async_setup(config_entry.entry_id)
+    await setup_integration(hass, config_entry)
 
     assert (
         config_entry.state,
@@ -115,9 +113,8 @@ async def test_setup_no_longer_fits(
 ) -> None:
     """Another instance behind the address, or a token without the rights, fails the setup."""
     lekto.connect.return_value = answer
-    config_entry.add_to_hass(hass)
 
-    await hass.config_entries.async_setup(config_entry.entry_id)
+    await setup_integration(hass, config_entry)
 
     assert config_entry.state is ConfigEntryState.SETUP_ERROR
     assert (
@@ -145,10 +142,8 @@ async def test_setup_starts_reauth(
     lekto.connect.side_effect = error
     if answer is not None:
         lekto.connect.return_value = answer
-    config_entry.add_to_hass(hass)
 
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_integration(hass, config_entry)
 
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert [flow["context"]["source"] for flow in flows] == [SOURCE_REAUTH]
@@ -160,8 +155,7 @@ async def test_reconfigure_repairs_wrong_instance(
     """An entry whose address leads to another instance sets up after reconfiguring it."""
     lekto = lekto_class.return_value
     lekto.connect.return_value = me(instance_id="0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1dff")
-    config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(config_entry.entry_id)
+    await setup_integration(hass, config_entry)
     assert config_entry.state is ConfigEntryState.SETUP_ERROR
 
     lekto.connect.return_value = me()

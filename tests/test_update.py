@@ -12,18 +12,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
+from . import setup_integration
 from .const import INSTANCE_ID, me, version
 
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
 
 UPDATE = "update.lekto"
-
-
-async def _set_up(hass: HomeAssistant, config_entry: MockConfigEntry) -> None:
-    config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
 
 
 async def _next_update(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
@@ -38,7 +33,7 @@ async def test_update_available(
     hass: HomeAssistant, config_entry: MockConfigEntry, entity_registry: er.EntityRegistry
 ) -> None:
     """A newer release shows as an update with its page; Lekto is updated where it runs."""
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(UPDATE)
     assert state is not None
@@ -59,7 +54,7 @@ async def test_up_to_date(
     """Without a newer release, the newest is the installed one."""
     lekto.version.get.return_value = version(latest=None, update_available=False)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(UPDATE)
     assert state is not None
@@ -74,7 +69,7 @@ async def test_updated_before_next_look(
     """Updated in place, Lekto still names the release it found; it is installed, so no link."""
     lekto.version.get.return_value = version(update_available=False)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(UPDATE)
     assert state is not None
@@ -99,7 +94,7 @@ async def test_newest_unknown(
     """While Lekto does not look for releases, or has not yet, the newest is unknown."""
     lekto.version.get.return_value = version(**changes)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get(UPDATE)
     assert state is not None
@@ -116,7 +111,7 @@ async def test_without_right(
     lekto.connect.return_value = me(rights=rights)
     lekto.auth.me.return_value = me(rights=rights)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     assert hass.states.get(UPDATE) is None
     lekto.version.get.assert_not_called()
@@ -129,7 +124,7 @@ async def test_lekto_updated(
     freezer: FrozenDateTimeFactory,
 ) -> None:
     """When Lekto runs another version than at setup, the entry is set up again."""
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
     lekto.version.get.return_value = version(
         lekto_version="0.18.0", latest=None, update_available=False
     )
@@ -151,7 +146,7 @@ async def test_other_version_than_at_setup(
     lekto.version.get.return_value = version(lekto_version="0.18.0")
 
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:
-        await _set_up(hass, config_entry)
+        await setup_integration(hass, config_entry)
         await _next_update(hass, freezer)
 
     reload.assert_not_called()
@@ -164,7 +159,7 @@ async def test_lekto_same_version(
     freezer: FrozenDateTimeFactory,
 ) -> None:
     """The same version keeps the entry as it is."""
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:
         await _next_update(hass, freezer)

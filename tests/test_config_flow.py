@@ -27,6 +27,15 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.usefixtures("mock_setup_entry")
 
+# What each flow shows when connecting fails.
+ERRORS = [
+    (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
+    (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
+    (LektoResponseError("no instance_id"), "unsupported"),
+    (LektoConnectionError("refused"), "cannot_connect"),
+    (RuntimeError("surprise"), "unknown"),
+]
+
 
 @pytest.mark.usefixtures("lekto")
 async def test_user(hass: HomeAssistant) -> None:
@@ -81,16 +90,7 @@ async def test_user_shared_client(hass: HomeAssistant, lekto_class: MagicMock) -
     lekto_class.assert_called_once_with(URL, TOKEN, client=get_async_client.return_value)
 
 
-@pytest.mark.parametrize(
-    ("error", "base"),
-    [
-        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
-        (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
-        (LektoResponseError("no instance_id"), "unsupported"),
-        (LektoConnectionError("refused"), "cannot_connect"),
-        (RuntimeError("surprise"), "unknown"),
-    ],
-)
+@pytest.mark.parametrize(("error", "base"), ERRORS)
 async def test_user_error(
     hass: HomeAssistant, lekto: MagicMock, error: Exception, base: str
 ) -> None:
@@ -176,16 +176,7 @@ async def test_reauth(
     assert lekto_class.call_args.args == (URL, NEW_TOKEN)
 
 
-@pytest.mark.parametrize(
-    ("error", "base"),
-    [
-        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
-        (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
-        (LektoResponseError("no instance_id"), "unsupported"),
-        (LektoConnectionError("refused"), "cannot_connect"),
-        (RuntimeError("surprise"), "unknown"),
-    ],
-)
+@pytest.mark.parametrize(("error", "base"), ERRORS)
 async def test_reauth_error(
     hass: HomeAssistant,
     lekto: MagicMock,
@@ -280,16 +271,7 @@ async def test_reconfigure(
     assert lekto_class.call_args.args == (NEW_URL, TOKEN)
 
 
-@pytest.mark.parametrize(
-    ("error", "base"),
-    [
-        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
-        (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
-        (LektoResponseError("no instance_id"), "unsupported"),
-        (LektoConnectionError("refused"), "cannot_connect"),
-        (RuntimeError("surprise"), "unknown"),
-    ],
-)
+@pytest.mark.parametrize(("error", "base"), ERRORS)
 async def test_reconfigure_error(
     hass: HomeAssistant,
     lekto: MagicMock,

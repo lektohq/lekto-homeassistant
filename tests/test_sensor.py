@@ -22,6 +22,7 @@ from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 from custom_components.lekto.const import DOMAIN
 from custom_components.lekto.coordinator import LektoData
 
+from . import setup_integration
 from .const import INSTANCE_ID, URL, health, inbox_summary, jobs_summary
 
 if TYPE_CHECKING:
@@ -53,12 +54,6 @@ DIAGNOSTIC = [
 ]
 
 
-async def _set_up(hass: HomeAssistant, config_entry: MockConfigEntry) -> None:
-    config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
-
-
 async def _next_update(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     # The coordinator adds a fraction of a second to 60 seconds and refreshes in the background.
     freezer.tick(timedelta(seconds=61))
@@ -74,7 +69,7 @@ async def test_sensors(
     entity_registry: er.EntityRegistry,
 ) -> None:
     """Each number of every user's documents is a sensor of the instance's device."""
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     for entity_id, value in SENSORS.items():
         state = hass.states.get(entity_id)
@@ -100,7 +95,7 @@ async def test_household_numbers(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
     """The numbers count every user's documents."""
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     lekto.inbox.summary.assert_called_with(all_users=True)
     lekto.documents.count.assert_called_with(all_users=True)
@@ -113,7 +108,7 @@ async def test_worst_lane_unknown(
     """Only documents in processing, or a lane a newer Lekto knows, leave the worst lane unknown."""
     lekto.inbox.summary.return_value = inbox_summary(worst_lane=lane)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get("sensor.lekto_inbox_worst_lane")
     assert state is not None
@@ -125,7 +120,7 @@ async def loaded_entry(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> MockConfigEntry:
     """Return the config entry, set up with the client of ``lekto``."""
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
     assert config_entry.runtime_data.client is lekto
     return config_entry
 
@@ -190,7 +185,7 @@ async def test_first_refresh_failed(
     """Without the first numbers the setup is tried again later."""
     lekto.inbox.summary.side_effect = LektoConnectionError("refused")
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     assert config_entry.state is ConfigEntryState.SETUP_RETRY
     assert config_entry.error_reason_translation_key == "update_failed"
@@ -222,7 +217,7 @@ async def test_diagnostic_sensors(
     hass: HomeAssistant, config_entry: MockConfigEntry, entity_registry: er.EntityRegistry
 ) -> None:
     """Lekto's state is diagnostic; the rarely needed sensors start disabled."""
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     for entity_id in DIAGNOSTIC:
         entry = entity_registry.async_get(entity_id)
@@ -242,7 +237,7 @@ async def test_diagnostic_sensors(
 @pytest.mark.usefixtures("entity_registry_enabled_by_default", "lekto")
 async def test_disabled_sensors(hass: HomeAssistant, config_entry: MockConfigEntry) -> None:
     """Enabled, the worker's last start and the confirmations since training show their values."""
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     for entity_id, value in DISABLED.items():
         state = hass.states.get(entity_id)
@@ -258,7 +253,7 @@ async def test_unknown_states(
     lekto.health.get.return_value = health(status="resting")
     lekto.jobs.summary.return_value = jobs_summary(last_started_at=None)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     for entity_id in ("sensor.lekto_health", "sensor.lekto_worker_last_started"):
         state = hass.states.get(entity_id)
@@ -274,7 +269,7 @@ async def test_without_search_and_classifier(
     lekto.search.status.side_effect = LektoServerError(Problem(title="Unavailable", status=503))
     lekto.classifier.status.side_effect = LektoServerError(Problem(title="Unavailable", status=503))
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     assert config_entry.state is ConfigEntryState.LOADED
     for entity_id in (
@@ -305,7 +300,7 @@ async def test_health(
     """Lekto's own unavailable reads as down, apart from Home Assistant's unavailable."""
     lekto.health.get.return_value = health(status=status)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     state = hass.states.get("sensor.lekto_health")
     assert state is not None
@@ -318,7 +313,7 @@ async def test_no_jobs(
     """Without any job the job counts are zero."""
     lekto.jobs.summary.return_value = jobs_summary(kinds=[])
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     for entity_id in ("sensor.lekto_jobs_failed", "sensor.lekto_jobs_waiting"):
         state = hass.states.get(entity_id)

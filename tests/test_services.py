@@ -29,6 +29,7 @@ from custom_components.lekto.services import (
     UPLOAD_SCHEMA,
 )
 
+from . import setup_integration
 from .const import (
     ACCEPTED,
     CONTACTS,
@@ -65,9 +66,7 @@ async def loaded(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> MockConfigEntry:
     """Return the entry, set up with every right."""
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    assert await setup_integration(hass, config_entry)
     assert config_entry.runtime_data.client is lekto
     return config_entry
 
@@ -204,8 +203,7 @@ async def test_upload_space_without_rights(
 ) -> None:
     """A space by name needs the right to list the spaces."""
     lekto.connect.return_value = me(rights=[r for r in me().rights if r != "spaces:read"])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     with pytest.raises(ServiceValidationError) as raised:
         await _call(hass, config_entry, "upload", file=FILE, space="Household")
@@ -243,8 +241,7 @@ async def test_lacks_rights(
     """An action whose rights the token lacks names them."""
     action, right, data = case
     lekto.connect.return_value = me(rights=[r for r in me().rights if r != right])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     with pytest.raises(ServiceValidationError) as raised:
         await _call(hass, config_entry, action, **data)
@@ -444,8 +441,7 @@ async def test_count_name_without_rights(
 ) -> None:
     """A filter by name needs the right to list the names."""
     lekto.connect.return_value = me(rights=[r for r in me().rights if r != "master_data:read"])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     with pytest.raises(ServiceValidationError) as raised:
         await _call(hass, config_entry, "count", tag=["Car"])
@@ -458,8 +454,7 @@ async def test_count_names_never_fetched(
 ) -> None:
     """While Lekto has given no names yet, a filter by name fails as Lekto does, not as unknown."""
     lekto.contacts.list.side_effect = LektoConnectionError("refused")
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
     await hass.async_block_till_done(wait_background_tasks=True)
 
     with pytest.raises(HomeAssistantError) as raised:
@@ -525,8 +520,7 @@ async def test_list_fields_without_names(
     """Without the rights to list names, the named fields stay empty."""
     rights = [r for r in me().rights if r not in {"master_data:read", "spaces:read"}]
     lekto.connect.return_value = me(rights=rights)
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     response = await _call(hass, config_entry, "list_documents", fields=["contact", "tags"])
 
@@ -549,8 +543,7 @@ async def test_list_without_rights(
 ) -> None:
     """The list needs the rights to read the household's documents."""
     lekto.connect.return_value = me(rights=["admin:count_all", "documents:count"])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     with pytest.raises(ServiceValidationError) as raised:
         await _call(hass, config_entry, "list_documents")
