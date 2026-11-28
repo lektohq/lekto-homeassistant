@@ -7,7 +7,7 @@
 | Failed to connect to Lekto | Home Assistant cannot reach the address: check the URL (with `https://` or `http://` and the port), that Lekto runs, and the certificate; for a self-signed one, turn off **Verify SSL certificate** |
 | Lekto does not accept the token | The token is unknown, expired or revoked: make a new one in Lekto |
 | The token lacks rights | The token misses `documents:count` or `admin:count_all`; the token's user must be an active admin ([setup](setup.md#the-api-token)) |
-| The server does not answer as Lekto 0.16 or newer does | The address leads to something else, or to an older Lekto: update Lekto |
+| The server does not answer as Lekto does | The address leads to something else: check it. Or Lekto is too old for this integration: update Lekto ([supported versions](supported.md)) |
 | This Lekto instance is already set up | Each instance is set up once; to change its address, use **Reconfigure** on the existing entry |
 | Lekto at this address is another instance than the one set up | When reconfiguring or entering a new token: the address or token belongs to another Lekto instance; use the one the entry was set up with, or remove the entry and add the other instance |
 | Unexpected error | Something the integration did not expect; turn on the debug log (below) and report it |

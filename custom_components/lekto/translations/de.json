@@ -9,7 +9,7 @@
       "invalid_auth": "Lekto nimmt das Token nicht an: Es ist unbekannt, abgelaufen oder widerrufen.",
       "missing_rights": "Dem Token fehlen Rechte. Nötig sind {rights}.",
       "unknown": "Unerwarteter Fehler.",
-      "unsupported": "Der Server antwortet nicht wie Lekto 0.16 oder neuer."
+      "unsupported": "Der Server antwortet nicht wie Lekto: Die Adresse führt woandershin, oder Lekto ist zu alt für diese Integration."
     },
     "step": {
       "reauth_confirm": {
@@ -182,7 +182,7 @@
       "message": "Lekto kennt nichts mit dem Namen „{name}“."
     },
     "unsupported": {
-      "message": "Der Server antwortet nicht wie Lekto 0.16 oder neuer."
+      "message": "Der Server antwortet nicht wie Lekto: Die Adresse führt woandershin, oder Lekto ist zu alt für diese Integration."
     },
     "update_failed": {
       "message": "Abruf der Zahlen von Lekto fehlgeschlagen: {error}"
