@@ -14,7 +14,7 @@ from pylekto import LektoError
 from .capabilities import Capability
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Sequence
+    from collections.abc import Awaitable, Callable, Collection, Sequence
     from uuid import UUID
 
     from pylekto import LektoClient
@@ -58,6 +58,22 @@ class _Named(Protocol):
 
     @property
     def name(self) -> str: ...
+
+
+class _Document(Protocol):
+    """pylekto's models of a document share no base class either; these are the ids they name."""
+
+    @property
+    def contact_id(self) -> UUID | None: ...
+
+    @property
+    def document_type_id(self) -> UUID | None: ...
+
+    @property
+    def space_id(self) -> UUID | None: ...
+
+    @property
+    def tag_ids(self) -> Sequence[UUID]: ...
 
 
 class LektoNames:
@@ -149,3 +165,31 @@ async def name_or_none(names: LektoNames, kind: Kind, item_id: UUID) -> str | No
         return await names.name(kind, item_id)
     except LektoError:
         return None
+
+
+async def document_names(
+    names: LektoNames, document: _Document, wanted: Collection[str]
+) -> tuple[dict[str, str | None], list[str] | None]:
+    """Return the names behind a document's ids: of its ``wanted`` single fields, and of its tags.
+
+    A name Lekto does not know, cannot give now or may not give to this token is None, and left
+    out of the tags. The tags are None when they are not wanted or the token may not list them.
+    """
+    item_ids = {
+        "contact": document.contact_id,
+        "document_type": document.document_type_id,
+        "space": document.space_id,
+    }
+    single: dict[str, str | None] = {}
+    for field, item_id in item_ids.items():
+        kind = FIELD_KINDS[field]
+        if field in wanted:
+            single[field] = (
+                await name_or_none(names, kind, item_id)
+                if item_id is not None and names.may(kind)
+                else None
+            )
+    if "tags" not in wanted or not names.may(Kind.TAG):
+        return single, None
+    tags = [await name_or_none(names, Kind.TAG, tag_id) for tag_id in document.tag_ids]
+    return single, [tag for tag in tags if tag is not None]

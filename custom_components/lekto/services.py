@@ -22,7 +22,7 @@ from pylekto import LektoConflictError, LektoError, LektoValidationError
 
 from .capabilities import RIGHTS, Capability, rights_text
 from .const import DOMAIN
-from .names import FIELD_KINDS, NEEDS, Kind, name_or_none
+from .names import NEEDS, Kind, document_names
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -285,29 +285,11 @@ async def _listed(
     }
     if "lane" in wanted:
         listed["lane"] = document.lane
-    names = coordinator.names
-    for field, item_id in (
-        ("contact", document.contact_id),
-        ("document_type", document.document_type_id),
-        ("space", document.space_id),
-    ):
-        if field in wanted:
-            kind = FIELD_KINDS[field]
-            listed[field] = (
-                await name_or_none(names, kind, item_id)
-                if item_id is not None and names.may(kind)
-                else None
-            )
+    single, tags = await document_names(coordinator.names, document, wanted)
+    listed |= single
+    # Asked for, the tags are there even when the token may not name them: none.
     if "tags" in wanted:
-        listed["tags"] = (
-            [
-                name
-                for tag_id in document.tag_ids
-                if (name := await name_or_none(names, Kind.TAG, tag_id)) is not None
-            ]
-            if names.may(Kind.TAG)
-            else []
-        )
+        listed["tags"] = list(tags or [])
     return listed
 
 

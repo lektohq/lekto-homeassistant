@@ -12,7 +12,7 @@ from pylekto import LektoError
 from .capabilities import Capability
 from .const import CONF_EVENT_FIELDS, EVENT_FIELDS
 from .entity import LektoEntity
-from .names import FIELD_KINDS, Kind, name_or_none
+from .names import document_names
 from .stream import connection_signal, signal
 
 if TYPE_CHECKING:
@@ -120,24 +120,13 @@ async def document_fields(
     except LektoError as err:
         _LOGGER.debug("Could not fetch the fields of document %s: %s", document_id, err)
         return {}
-    names = coordinator.names
     fields: dict[str, str | list[str]] = {}
     if "title" in wanted:
         fields["title"] = document.title
     if "document_date" in wanted and document.document_date is not None:
         fields["document_date"] = document.document_date.isoformat()
-    item_ids = {
-        "contact": document.contact_id,
-        "document_type": document.document_type_id,
-        "space": document.space_id,
-    }
-    for field, item_id in item_ids.items():
-        kind = FIELD_KINDS[field]
-        if field in wanted and item_id is not None and names.may(kind):
-            name = await name_or_none(names, kind, item_id)
-            if name is not None:
-                fields[field] = name
-    if "tags" in wanted and names.may(Kind.TAG):
-        tags = [await name_or_none(names, Kind.TAG, tag_id) for tag_id in document.tag_ids]
-        fields["tags"] = [tag for tag in tags if tag is not None]
+    single, tags = await document_names(coordinator.names, document, wanted)
+    fields |= {field: name for field, name in single.items() if name is not None}
+    if tags is not None:
+        fields["tags"] = tags
     return fields
