@@ -22,6 +22,7 @@ from custom_components.lekto.const import CONF_CAPABILITIES, DOMAIN
 from custom_components.lekto.repairs import async_create_fix_flow
 from custom_components.lekto.sensor import SENSORS
 
+from . import setup_integration
 from .const import ENTRY_DATA, INSTANCE_ID, me, streams
 
 if TYPE_CHECKING:
@@ -50,13 +51,6 @@ def _entry(capabilities: list[str] | None = None) -> MockConfigEntry:
     return MockConfigEntry(domain=DOMAIN, title="Lekto", unique_id=INSTANCE_ID, data=data)
 
 
-async def _set_up(hass: HomeAssistant, entry: MockConfigEntry) -> None:
-    if hass.config_entries.async_get_entry(entry.entry_id) is None:
-        entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-
 async def _next_update(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     # The coordinator adds a fraction of a second to 60 seconds and refreshes in the background.
     freezer.tick(timedelta(seconds=61))
@@ -74,7 +68,7 @@ async def test_minimal(hass: HomeAssistant, lekto: MagicMock) -> None:
     _rights(lekto, MINIMAL)
     entry = _entry()
 
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
 
     assert entry.state is ConfigEntryState.LOADED
     assert hass.states.get("sensor.lekto_inbox_open") is not None
@@ -92,7 +86,7 @@ async def test_minimal_without_stream(hass: HomeAssistant, lekto: MagicMock) -> 
     """Without the rights of the events the stream is not opened."""
     _rights(lekto, MINIMAL)
 
-    await _set_up(hass, _entry())
+    await setup_integration(hass, _entry())
 
     lekto.events.listen.assert_not_called()
 
@@ -102,7 +96,7 @@ async def test_lost_while_running(
 ) -> None:
     """A right lost while running sets the entry up again without it, and raises a repair."""
     entry = _entry()
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
     assert entry.data[CONF_CAPABILITIES] == [
         "diagnostics",
         "documents",
@@ -139,7 +133,7 @@ async def test_refused_without_lost_right(
 ) -> None:
     """A refused request while Lekto still names the rights does not set the entry up again."""
     entry = _entry()
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
 
     lekto.jobs.summary.side_effect = FORBIDDEN
     await _next_update(hass, freezer)
@@ -155,7 +149,7 @@ async def test_rights_unknown(
 ) -> None:
     """When Lekto cannot say which rights the token has, nothing is set up again."""
     entry = _entry()
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
 
     lekto.jobs.summary.side_effect = FORBIDDEN
     lekto.auth.me.side_effect = LektoConnectionError("refused")
@@ -169,7 +163,7 @@ async def test_required_lost(
 ) -> None:
     """Losing a right the integration cannot do without asks for a new token."""
     entry = _entry()
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
 
     _rights(lekto, ["documents:count"])
     lekto.inbox.summary.side_effect = FORBIDDEN
@@ -185,7 +179,7 @@ async def test_lost_while_off(hass: HomeAssistant, lekto: MagicMock) -> None:
     _rights(lekto, MINIMAL)
     entry = _entry(["diagnostics", "documents", "events", "mail", "names", "spaces", "upload"])
 
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
 
     registry = ir.async_get(hass)
     for capability in ("diagnostics", "events"):
@@ -207,7 +201,7 @@ async def test_back(hass: HomeAssistant) -> None:
         translation_key="diagnostics_lost",
     )
 
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
 
     assert ir.async_get(hass).async_get_issue(DOMAIN, f"{entry.entry_id}_diagnostics_lost") is None
 
@@ -217,7 +211,7 @@ async def _repair(
 ) -> tuple[MockConfigEntry, str]:
     """Set up an entry whose token lost system:read, and open the repair's flow."""
     entry = _entry()
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
     _rights(lekto, WITHOUT_SYSTEM)
     assert await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
@@ -294,7 +288,7 @@ async def test_stream_refused_after_lost_right(hass: HomeAssistant, lekto: Magic
     lekto.auth.me.return_value = me(rights=MINIMAL)
     entry = _entry()
 
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
     await hass.async_block_till_done()
 
     assert lekto.connect.await_count == 2
@@ -343,7 +337,7 @@ async def test_entry_removed(hass: HomeAssistant, lekto: MagicMock) -> None:
     """Removing the entry removes its repairs."""
     _rights(lekto, MINIMAL)
     entry = _entry(["diagnostics"])
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
     registry = ir.async_get(hass)
     assert registry.async_get_issue(DOMAIN, f"{entry.entry_id}_diagnostics_lost")
 
@@ -368,7 +362,7 @@ async def test_unknown_capability(hass: HomeAssistant, lekto: MagicMock) -> None
         translation_key="mail_lost",
     )
 
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
 
     assert entry.data[CONF_CAPABILITIES] == ["mail"]
     assert ir.async_get(hass).async_get_issue(DOMAIN, f"{entry.entry_id}_mail_lost") is None
@@ -377,7 +371,7 @@ async def test_unknown_capability(hass: HomeAssistant, lekto: MagicMock) -> None
 async def test_one_reload(hass: HomeAssistant, lekto: MagicMock) -> None:
     """Refused twice at once, the entry is set up again only once."""
     entry = _entry()
-    await _set_up(hass, entry)
+    await setup_integration(hass, entry)
     coordinator = entry.runtime_data
     _rights(lekto, WITHOUT_SYSTEM)
 

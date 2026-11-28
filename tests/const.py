@@ -29,7 +29,7 @@ from pylekto.models import (
 from pytest_homeassistant.common import load_json_object_fixture
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncIterator, Callable, Sequence
 
 INSTANCE_ID = "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1d00"
 DOCUMENT_ID = "0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1e00"
@@ -94,16 +94,31 @@ def event(type_: str, **fields: object) -> EventMessage:
 
 
 def streams(
-    *answers: list[EventMessage] | Exception,
+    *answers: Sequence[EventMessage | Exception | float] | Exception,
+    passes: Callable[[float], object] | None = None,
 ) -> Callable[..., AsyncIterator[EventMessage]]:
-    """Return what ``events.listen`` does on each call: events, then stay open; or raise."""
+    """Return what ``events.listen`` does on each call.
+
+    An exception stands for a stream that does not start. A list stands for one that flows: its
+    events come, a number lets that many seconds pass (by ``passes``, a clock's tick), an
+    exception breaks the stream off; the last stream stays open.
+    """
     remaining = list(answers)
 
-    async def listen(**_filters: object) -> AsyncIterator[EventMessage]:
+    async def listen(
+        *, on_connected: Callable[[], None], **_filters: object
+    ) -> AsyncIterator[EventMessage]:
         answer = remaining.pop(0) if remaining else []
         if isinstance(answer, Exception):
             raise answer
+        on_connected()
         for message in answer:
+            if isinstance(message, Exception):
+                raise message
+            if isinstance(message, float):
+                assert passes is not None
+                passes(message)
+                continue
             yield message
         if not remaining:
             await asyncio.Event().wait()

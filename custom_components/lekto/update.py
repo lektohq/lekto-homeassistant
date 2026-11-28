@@ -6,7 +6,7 @@ from homeassistant.components.update import UpdateEntity
 from homeassistant.const import EntityCategory
 
 from .capabilities import Capability
-from .entity import LektoEntity
+from .entity import LektoCoordinatorEntity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -30,7 +30,7 @@ async def async_setup_entry(
         async_add_entities([LektoUpdate(coordinator)])
 
 
-class LektoUpdate(LektoEntity, UpdateEntity):
+class LektoUpdate(LektoCoordinatorEntity, UpdateEntity):
     """Lekto's version and the newest release; Lekto is updated where it runs, not from here."""
 
     # The device's main feature carries the device's name: update.lekto, not update.lekto_lekto.
@@ -45,15 +45,14 @@ class LektoUpdate(LektoEntity, UpdateEntity):
     @override
     def installed_version(self) -> str | None:
         """Return the version Lekto runs."""
-        version = self.coordinator.data.version
-        return version.lekto_version if version else self.coordinator.lekto_version
+        return self.coordinator.data.system.version.lekto_version
 
     @property
     @override
     def latest_version(self) -> str | None:
         """Return the newest release; unknown while Lekto does not look for releases."""
-        version = self.coordinator.data.version
-        if version is None or not version.update_check or version.checked_at is None:
+        version = self.coordinator.data.system.version
+        if not version.update_check or version.checked_at is None:
             return None
         if version.update_available and version.latest is not None:
             return version.latest.version
@@ -63,7 +62,7 @@ class LektoUpdate(LektoEntity, UpdateEntity):
     @override
     def release_url(self) -> str | None:
         """Return the page of the newest release, while it is not the one installed."""
-        version = self.coordinator.data.version
-        if version is None or not version.update_available or version.latest is None:
+        version = self.coordinator.data.system.version
+        if not version.update_available or version.latest is None:
             return None
         return version.latest.url

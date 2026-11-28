@@ -1,6 +1,7 @@
 """The kept names: ids by name, names by id, fetched when needed."""
 
 import asyncio
+import traceback
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 from uuid import UUID
@@ -11,7 +12,7 @@ from pylekto import LektoConnectionError
 from custom_components.lekto.capabilities import Capability
 from custom_components.lekto.names import MAX_AGE, MIN_AGE, Kind, LektoNames
 
-from .const import CONTACTS, SPACES
+from .const import CONTACTS, SPACES, TAGS
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -126,16 +127,36 @@ async def test_fetched_once_at_a_time(lekto: MagicMock) -> None:
 
 
 async def test_failure_asked_again_after_a_minute(lekto: MagicMock, clock: Clock) -> None:
-    """A refusing Lekto is asked again after a minute, not on every call."""
+    """A refusing Lekto is asked again after a minute; until then its refusal is the answer."""
     lekto.tags.list.side_effect = LektoConnectionError("refused")
     names = LektoNames(lekto, ALL)
     with pytest.raises(LektoConnectionError):
         await names.ids(Kind.TAG, "Car")
 
-    assert await names.ids(Kind.TAG, "Car") == []
+    depths = []
+    for _ in range(3):
+        with pytest.raises(LektoConnectionError, match="refused") as raised:
+            await names.ids(Kind.TAG, "Car")
+        depths.append(len(traceback.extract_tb(raised.value.__traceback__)))
+    with pytest.raises(LektoConnectionError, match="refused"):
+        await names.name(Kind.TAG, TAGS[0].id)
     assert lekto.tags.list.await_count == 1
+    assert len(set(depths)) == 1
 
     clock.now += MIN_AGE + 1
     lekto.tags.list.side_effect = None
     assert await names.ids(Kind.TAG, "Car")
+    assert lekto.tags.list.await_count == 2
+
+
+async def test_failure_keeps_names_from_before(lekto: MagicMock, clock: Clock) -> None:
+    """Names fetched once go on answering while Lekto refuses to give them again."""
+    names = LektoNames(lekto, ALL)
+    assert await names.ids(Kind.TAG, "Car")
+    clock.now += MAX_AGE + 1
+    lekto.tags.list.side_effect = LektoConnectionError("refused")
+    with pytest.raises(LektoConnectionError):
+        await names.ids(Kind.TAG, "Car")
+
+    assert await names.ids(Kind.TAG, "Car") == [TAGS[0].id]
     assert lekto.tags.list.await_count == 2

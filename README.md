@@ -122,7 +122,7 @@ household.
 
 | Entity | What it does | Needs |
 | --- | --- | --- |
-| **Document** (`event.lekto_document`) | Fires `received`, `filed` or `review_required` with the document's id and, if picked, its fields | `documents:read`, `admin:documents_all` |
+| **Document** (`event.lekto_document`) | Fires `received`, `filed` or `review_required` with the document's id and, if picked, its fields; unavailable while the connection to Lekto's events is lost | `documents:read`, `admin:documents_all` |
 | **Lekto** (update) | The version Lekto runs and its newest release; install it where Lekto runs | `system:read` |
 
 ## Actions
@@ -144,7 +144,7 @@ automation:
     triggers:
       - trigger: state
         entity_id: event.lekto_document
-        not_from: [unavailable, unknown]
+        not_from: unavailable
     conditions:
       - condition: state
         entity_id: event.lekto_document

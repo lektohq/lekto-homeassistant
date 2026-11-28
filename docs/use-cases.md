@@ -16,7 +16,8 @@ automation:
       - trigger: state
         entity_id: sensor.lekto_inbox_worst_lane
         to: red
-        not_from: [unavailable, unknown]
+        # Back after Lekto did not answer is no news; red in an inbox that was empty is.
+        not_from: unavailable
     actions:
       - action: notify.notify
         data:
@@ -35,8 +36,8 @@ automation:
     triggers:
       - trigger: state
         entity_id: event.lekto_document
-        # A restart restores the last event; it is no new one.
-        not_from: [unavailable, unknown]
+        # After a restart or a lost connection the last event is back; it is no new one.
+        not_from: unavailable
     conditions:
       - condition: state
         entity_id: event.lekto_document

@@ -10,10 +10,10 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from pylekto import LektoError
 
 from .capabilities import Capability
-from .const import CONF_EVENT_FIELDS, EVENT_FIELDS
+from .const import CONF_EVENT_FIELDS, DOMAIN, EVENT_FIELDS, LANES
 from .entity import LektoEntity
-from .names import FIELD_KINDS, Kind, name_or_none
-from .stream import signal
+from .names import document_names
+from .stream import connection_signal, signal
 
 if TYPE_CHECKING:
     from collections.abc import Collection
@@ -36,7 +36,7 @@ EVENT_TYPES: Final = {
     "document.review_required": "review_required",
 }
 # Lekto asks for a review only of uncertain (yellow) or failed (red) documents.
-LANES: Final = frozenset({"yellow", "red"})
+REVIEW_LANES: Final = frozenset(LANES) - {"green"}
 
 
 async def async_setup_entry(
@@ -46,7 +46,7 @@ async def async_setup_entry(
 ) -> None:
     """Add the instance's document event, if the token may follow the household's documents."""
     if Capability.EVENTS in entry.runtime_data.capabilities:
-        async_add_entities([LektoDocumentEvent(entry.runtime_data)])
+        async_add_entities([LektoDocumentEvent(entry)])
 
 
 class LektoDocumentEvent(LektoEntity, EventEntity):
@@ -57,30 +57,30 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
     # Titles and names stay out of the recorder's history: privacy first.
     _unrecorded_attributes = frozenset(EVENT_FIELDS)
 
-    def __init__(self, coordinator: LektoCoordinator) -> None:
-        """Make the document event of the instance."""
-        super().__init__(coordinator, "document")
+    def __init__(self, entry: LektoConfigEntry) -> None:
+        """Make the document event of the entry's instance."""
+        super().__init__(entry.runtime_data, "document")
+        self._entry = entry
         # Events wait for their document's fields one after the other, so they stay in order.
         self._order = asyncio.Lock()
+        self._taken = 0
 
     @property
     @override
     def available(self) -> bool:
-        """Stay available while the numbers fail: the events come on their own stream."""
-        return True
-
-    @callback
-    @override
-    def _handle_coordinator_update(self) -> None:
-        """Keep the last event; a new count of the numbers changes nothing here."""
+        """Follow the stream, not the numbers; an event taken before a loss still shows first."""
+        return self._entry.runtime_data.stream.connected or self._taken > 0
 
     @override
     async def async_added_to_hass(self) -> None:
-        """Take the events of the entry's stream."""
+        """Take the events of the entry's stream, and follow whether it flows."""
         await super().async_added_to_hass()
         self.async_on_remove(
+            async_dispatcher_connect(self.hass, signal(self._entry), self._handle_event)
+        )
+        self.async_on_remove(
             async_dispatcher_connect(
-                self.hass, signal(self.coordinator.config_entry), self._handle_event
+                self.hass, connection_signal(self._entry), self.async_write_ha_state
             )
         )
 
@@ -90,23 +90,34 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
         event_type = EVENT_TYPES.get(event.type)
         if event_type is None:
             return
+        self._taken += 1
         # A background task, so that unloading cancels events still waiting for their fields.
-        entry = self.coordinator.config_entry
-        entry.async_create_background_task(self.hass, self._trigger(event, event_type), "event")
+        self._entry.async_create_background_task(
+            self.hass, self._trigger(event, event_type), f"{DOMAIN} document event"
+        )
 
     async def _trigger(self, event: EventMessage, event_type: str) -> None:
-        async with self._order:
-            attributes: dict[str, str | list[str]] = {}
-            if event.document_id is not None:
-                attributes["document_id"] = str(event.document_id)
-                wanted = self.coordinator.config_entry.options.get(CONF_EVENT_FIELDS, [])
-                if wanted:
-                    attributes |= await document_fields(self.coordinator, event.document_id, wanted)
-            lane = (event.model_extra or {}).get("lane")
-            if lane in LANES:
-                attributes["lane"] = lane
-            self._trigger_event(event_type, attributes)
-            self.async_write_ha_state()
+        try:
+            async with self._order:
+                attributes: dict[str, str | list[str]] = {}
+                if event.document_id is not None:
+                    attributes["document_id"] = str(event.document_id)
+                    wanted = self._entry.options.get(CONF_EVENT_FIELDS, [])
+                    if wanted:
+                        attributes |= await document_fields(
+                            self._entry.runtime_data, event.document_id, wanted
+                        )
+                # Read as an attribute: it is one whether pylekto's model names the lane or not.
+                lane = getattr(event, "lane", None)
+                if lane in REVIEW_LANES:
+                    attributes["lane"] = lane
+                self._trigger_event(event_type, attributes)
+                self.async_write_ha_state()
+        finally:
+            self._taken -= 1
+            # The stream was lost while the event waited: it showed first, now the loss does.
+            if not self.available:
+                self.async_write_ha_state()
 
 
 async def document_fields(
@@ -118,24 +129,13 @@ async def document_fields(
     except LektoError as err:
         _LOGGER.debug("Could not fetch the fields of document %s: %s", document_id, err)
         return {}
-    names = coordinator.names
     fields: dict[str, str | list[str]] = {}
     if "title" in wanted:
         fields["title"] = document.title
     if "document_date" in wanted and document.document_date is not None:
         fields["document_date"] = document.document_date.isoformat()
-    item_ids = {
-        "contact": document.contact_id,
-        "document_type": document.document_type_id,
-        "space": document.space_id,
-    }
-    for field, item_id in item_ids.items():
-        kind = FIELD_KINDS[field]
-        if field in wanted and item_id is not None and names.may(kind):
-            name = await name_or_none(names, kind, item_id)
-            if name is not None:
-                fields[field] = name
-    if "tags" in wanted and names.may(Kind.TAG):
-        tags = [await name_or_none(names, Kind.TAG, tag_id) for tag_id in document.tag_ids]
-        fields["tags"] = [tag for tag in tags if tag is not None]
+    single, tags = await document_names(coordinator.names, document, wanted)
+    fields |= {field: name for field, name in single.items() if name is not None}
+    if tags is not None:
+        fields["tags"] = tags
     return fields

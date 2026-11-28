@@ -23,6 +23,7 @@ from pylekto.resources.version import VersionResource
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.lekto.const import DOMAIN
+from custom_components.lekto.stream import LektoStream
 
 from .const import (
     ACCEPTED,
@@ -47,7 +48,7 @@ from .const import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator
+    from collections.abc import AsyncIterator, Callable, Iterator
 
     from pylekto.models import EventMessage
 
@@ -63,12 +64,15 @@ def no_stream(request: pytest.FixtureRequest) -> Iterator[None]:
     if request.node.get_closest_marker("stream"):
         yield
         return
-    with patch("custom_components.lekto.listen", AsyncMock(return_value=None)):
+    with patch.object(LektoStream, "listen", AsyncMock(return_value=None)):
         yield
 
 
-async def quiet_stream(**_filters: object) -> AsyncIterator[EventMessage]:
-    """Stand for an event stream that stays open without an event."""
+async def quiet_stream(
+    *, on_connected: Callable[[], None], **_filters: object
+) -> AsyncIterator[EventMessage]:
+    """Stand for an event stream that flows and stays open without an event."""
+    on_connected()
     await asyncio.Event().wait()
     # Never reached; the yield makes this an async generator, as listen() is.
     yield event("document.received")

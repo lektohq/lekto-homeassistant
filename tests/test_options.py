@@ -8,6 +8,7 @@ from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.lekto.const import CONF_CAPABILITIES, CONF_EVENT_FIELDS, DOMAIN
 
+from . import setup_integration
 from .const import ENTRY_DATA, INSTANCE_ID, me
 
 if TYPE_CHECKING:
@@ -36,8 +37,7 @@ async def test_options(
     """The options offer the fields the token's rights allow, and keep the pick."""
     if rights is not None:
         lekto.connect.return_value = me(rights=rights)
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
     assert result["type"] is FlowResultType.FORM
@@ -58,8 +58,7 @@ async def test_options_without_events(
 ) -> None:
     """Without the rights of the document event there is nothing to pick."""
     lekto.connect.return_value = me(rights=["admin:count_all", "documents:count"])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
 
@@ -77,7 +76,7 @@ async def test_options_drop_fields_no_longer_offered(
     hass.config_entries.async_update_entry(
         config_entry, options={CONF_EVENT_FIELDS: ["title", "contact"]}
     )
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
 

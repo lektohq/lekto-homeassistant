@@ -2,9 +2,17 @@
 
 The event entity **Document** (`event.lekto_document`) fires when a document of the household comes
 in, is filed or waits for someone to look at it. It carries the document's id and, when a review is
-needed, the lane; no title, contact or type, which stay in Lekto. It comes from Lekto's event stream
-and stays available while the sensors' numbers cannot be fetched. It needs the rights
+needed, the lane; no title, contact or type, which stay in Lekto. It needs the rights
 `documents:read` and `admin:documents_all` ([setup](setup.md)).
+
+The events come on a connection of their own, Lekto's event stream. While the integration has no
+such connection, the entity is unavailable; it is back as soon as the stream flows again, before
+the next event. The sensors' numbers have no part in this: while they cannot be fetched, events
+still come.
+
+An automation should skip a change from `unavailable`, which is the entity coming back, and no
+other: the state is unknown until the first event, and again after Home Assistant restarted or
+the entry was set up again while the stream was lost, so the next event changes it from unknown.
 
 | Event type (`event_type`) | Shown as | When | Attributes |
 | --- | --- | --- | --- |
@@ -47,8 +55,8 @@ automation:
     triggers:
       - trigger: state
         entity_id: event.lekto_document
-        # A restart restores the last event; it is no new one.
-        not_from: [unavailable, unknown]
+        # After a restart or a lost connection the last event is back; it is no new one.
+        not_from: unavailable
     conditions:
       - condition: state
         entity_id: event.lekto_document

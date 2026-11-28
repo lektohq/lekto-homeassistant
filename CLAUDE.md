@@ -9,10 +9,10 @@ newer. The repository is decided in `.knowledge/decisions/2026-11-19-homeassista
 
 | Path | Content |
 | --- | --- |
-| `custom_components/lekto/` | The integration: `manifest.json` (version `0.0.0`, set from the tag on release), `__init__.py` (setup), `capabilities.py` (what the token's rights allow), `repairs.py` (a right the token lost, another version of the API), `config_flow.py` (also the options: the document event's fields), `names.py` (kept names of contacts, types, tags, spaces), `coordinator.py` (the numbers, every 60 s), `stream.py` (Lekto's events, connected again when lost), `entity.py` (the base entity and the device), `sensor.py`, `event.py` (the document event), `update.py` (the newest release of Lekto), `services.py` and `services.yaml` (the actions), `diagnostics.py`, `const.py`, `icons.json`, `translations/` (en, de), `quality_scale.yaml` (the state of every rule; all done, Platinum in `manifest.json`), `brand/` (the owl as icon) |
+| `custom_components/lekto/` | The integration: `manifest.json` (version `0.0.0`, set from the tag on release), `__init__.py` (setup), `capabilities.py` (what the token's rights allow), `repairs.py` (a right the token lost, another version of the API), `config_flow.py` (also the options: the document event's fields), `names.py` (kept names of contacts, types, tags, spaces), `coordinator.py` (the numbers, every 60 s), `stream.py` (Lekto's events, connected again when lost; it knows whether the stream flows), `entity.py` (the base entity with the device, and the one that follows the coordinator), `sensor.py`, `event.py` (the document event), `update.py` (the newest release of Lekto), `services.py` and `services.yaml` (the actions), `diagnostics.py`, `const.py`, `icons.json`, `translations/` (en, de), `quality_scale.yaml` (the state of every rule; all done, Platinum in `manifest.json`), `brand/` (the owl as icon) |
 | `docs/` | The user documentation, after the `docs-*` rules of the quality scale |
 | `hacs.json` | What the Marketplace reads: name, Home Assistant from 2026.11.0, a release as `lekto.zip` |
-| `tests/` | pytest with the fixtures of `pytest-homeassistant` (`hass`, `MockConfigEntry`, …); `tests/ruff.toml` adjusts the rules for tests |
+| `tests/` | pytest with the fixtures of `pytest-homeassistant` (`hass`, `MockConfigEntry`, …); `setup_integration` in `tests/__init__.py` sets an entry up; `tests/ruff.toml` adjusts the rules for tests |
 | `config/` | The Home Assistant of `script/develop`: only `configuration.yaml` is in git |
 | `script/` | `setup` (once: dependencies, Git hooks), `bootstrap` (every start of the devcontainer: dependencies), `develop` (Home Assistant with the integration on port 8123) |
 | `.devcontainer/`, `Dockerfile.dev` | Devcontainer: Python 3.14, uv, gh, Claude Code; the virtual environment lives in `/home/vscode/.local/dev-venv` |
@@ -35,7 +35,9 @@ script/develop                   # Home Assistant with the integration on http:/
 
 Run all checks before every commit; `script/setup` installs them as a Git hook (`prek install`).
 CI also runs hassfest, Home Assistant's own check of the integration, from its image
-`ghcr.io/home-assistant/hassfest` of the release the tests run against.
+`ghcr.io/home-assistant/hassfest` of the release the tests run against. hassfest skips
+`quality_scale.yaml` and the checks of its rules for a custom integration:
+`tests/test_quality_scale.py` holds what it would check.
 
 Publishing a release on GitHub runs `.github/workflows/release.yml`: it sets the version from the
 tag in `manifest.json`, packs `custom_components/lekto` as `lekto.zip` and attaches it to the
@@ -47,11 +49,26 @@ fails on a tag.
 ## Rules
 
 - The integration talks to Lekto only through pylekto; no HTTP of its own. `manifest.json` pins
-  pylekto exactly (`pylekto==0.9.0`), as Home Assistant requires; Renovate raises it.
+  pylekto exactly (`pylekto==0.9.2`), as Home Assistant requires; Renovate raises it.
 - Home Assistant comes with `pytest-homeassistant`, one package per Home Assistant release, which
   pins `homeassistant` exactly; Renovate raises it together with the image of hassfest.
 - The integration aims at the highest tier of Home Assistant's quality scale (Platinum);
-  `quality_scale.yaml` holds the state of every rule.
+  `quality_scale.yaml` holds the state of every rule. Nobody else checks the tier: a rule is
+  `done` only with the code, the tests and the documentation it asks for. mypy runs with what
+  Home Assistant adds to strict for its own integrations (`pyproject.toml`).
+- The config entry is `LektoConfigEntry` everywhere; only `coordinator.py` names Home Assistant's
+  `ConfigEntry`. A new entry is titled by the host of its address; the device is always "Lekto",
+  so entity ids do not depend on the title.
+- The document event follows the event stream, not the numbers: unavailable from a loss until
+  pylekto's `on_connected` (the stream's first line), which also logs the return; an event taken
+  before a loss still shows first. The wait before the next try starts short again only after a
+  stream that flowed for more than five seconds; Lekto's `Retry-After` counts for a day at most
+  (`RETRY_AFTER_MAX`), for the stream and the numbers alike. The documented triggers skip changes
+  from `unavailable` alone: Home Assistant restores no time of the last event from an entity that
+  was unavailable, so the next event comes from `unknown`. Entities of the numbers build on
+  `LektoCoordinatorEntity`; what `system:read` opens is read through `LektoData.system`.
+- What stands in two places is held equal by a test: `services.yaml` and the selectors' texts
+  with the schemas and constants of `services.py`, `ENTITY_KEYS` with the sensors.
 - Not in the Marketplace's catalog (`hacs/default`) and no `hacs/action` in CI until Tobi says so
   (`.knowledge/open/homeassistant-default-catalog.md`); users add the repository themselves.
 - Ruff (`select = ["ALL"]`) and mypy (`strict`) report nothing on new or changed code.

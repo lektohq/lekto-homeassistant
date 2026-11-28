@@ -32,6 +32,7 @@ RIGHTS: Final[dict[Capability, frozenset[str]]] = {
     Capability.SPACES: frozenset({"spaces:read", "admin:documents_all"}),
     Capability.UPLOAD: frozenset({"documents:upload"}),
     Capability.MAIL: frozenset({"system:read", "system:write", "admin:mailboxes"}),
+    # The rights of the events, yet a capability of its own: it brings no entity to repair.
     Capability.DOCUMENTS: frozenset({"documents:read", "admin:documents_all"}),
 }
 
@@ -50,6 +51,11 @@ ENTITY_KEYS: Final[dict[Capability, frozenset[str]]] = {
     ),
     Capability.EVENTS: frozenset({"document"}),
 }
+
+
+def rights_text(rights: Iterable[str]) -> str:
+    """Write ``rights`` as a message names them: sorted, so the same rights always read alike."""
+    return ", ".join(sorted(rights))
 
 
 def missing_rights(rights: Iterable[str]) -> list[str]:

@@ -1,12 +1,13 @@
 """The Lekto integration: Lekto DMS in Home Assistant."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.const import CONF_API_TOKEN, CONF_URL, CONF_VERIFY_SSL, Platform
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryError,
     ConfigEntryNotReady,
+    HomeAssistantError,
 )
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.httpx_client import get_async_client
@@ -18,12 +19,11 @@ from pylekto import (
     LektoResponseError,
 )
 
-from .capabilities import Capability, capabilities, missing_rights
+from .capabilities import Capability, capabilities, missing_rights, rights_text
 from .const import DOMAIN, REQUIRED_RIGHTS
 from .coordinator import LektoConfigEntry, LektoCoordinator
 from .repairs import note_issues
 from .services import async_setup_services
-from .stream import listen
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -34,6 +34,14 @@ if TYPE_CHECKING:
 PLATFORMS: list[Platform] = [Platform.EVENT, Platform.SENSOR, Platform.UPDATE]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+# What a failed connection means for the entry: a new token, no further try, or a later one.
+SETUP_ERRORS: Final[dict[str, type[HomeAssistantError]]] = {
+    "invalid_auth": ConfigEntryAuthFailed,
+    "missing_rights": ConfigEntryAuthFailed,
+    "unsupported": ConfigEntryError,
+    "cannot_connect": ConfigEntryNotReady,
+}
 
 
 async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
@@ -51,27 +59,31 @@ def create_client(hass: HomeAssistant, data: Mapping[str, Any]) -> LektoClient:
     )
 
 
+def connect_error(err: LektoError) -> str:
+    """Name why connecting failed: the key of the flows' error and of the setup's message."""
+    if isinstance(err, LektoAuthenticationError):
+        return "invalid_auth"
+    # An upload token may not even ask who it is.
+    if isinstance(err, LektoForbiddenError):
+        return "missing_rights"
+    if isinstance(err, LektoResponseError):
+        return "unsupported"
+    return "cannot_connect"
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> None:
     """Connect to Lekto and check that the token still fits the entry."""
     client = create_client(hass, entry.data)
     try:
         me = await client.connect()
-    except LektoAuthenticationError as err:
-        raise ConfigEntryAuthFailed(
-            translation_domain=DOMAIN, translation_key="invalid_auth"
-        ) from err
-    # An upload token may not even ask who it is.
-    except LektoForbiddenError as err:
-        raise ConfigEntryAuthFailed(
-            translation_domain=DOMAIN,
-            translation_key="missing_rights",
-            translation_placeholders={"rights": ", ".join(sorted(REQUIRED_RIGHTS))},
-        ) from err
-    except LektoResponseError as err:
-        raise ConfigEntryError(translation_domain=DOMAIN, translation_key="unsupported") from err
     except LektoError as err:
-        raise ConfigEntryNotReady(
-            translation_domain=DOMAIN, translation_key="cannot_connect"
+        key = connect_error(err)
+        raise SETUP_ERRORS[key](
+            translation_domain=DOMAIN,
+            translation_key=key,
+            translation_placeholders=(
+                {"rights": rights_text(REQUIRED_RIGHTS)} if key == "missing_rights" else None
+            ),
         ) from err
     if str(me.instance_id) != entry.unique_id:
         raise ConfigEntryError(translation_domain=DOMAIN, translation_key="wrong_instance")
@@ -79,7 +91,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
         raise ConfigEntryAuthFailed(
             translation_domain=DOMAIN,
             translation_key="missing_rights",
-            translation_placeholders={"rights": ", ".join(missing)},
+            translation_placeholders={"rights": rights_text(missing)},
         )
     given = capabilities(me.rights)
     note_issues(hass, entry, me, given)
@@ -89,7 +101,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_create_background_task(hass, coordinator.names.load(), f"{DOMAIN} names")
     if Capability.EVENTS in given:
-        entry.async_create_background_task(hass, listen(hass, entry), f"{DOMAIN} event stream")
+        entry.async_create_background_task(
+            hass, coordinator.stream.listen(), f"{DOMAIN} event stream"
+        )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> None:

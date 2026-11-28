@@ -40,11 +40,17 @@ The integration connects to Lekto and checks the token's rights before it saves 
 Lekto instance can be set up once; a second entry for the same instance is refused, whatever its
 token.
 
+The entry is named after the host of the address, such as `lekto.example.com`, with the port if
+the address names one, so that the entries of two instances can be told apart; rename it as you
+like. The device and its entities are called Lekto whatever the entry's name. An entry made with
+a version of the integration before this naming keeps its name, Lekto.
+
 ## A new token
 
 When Lekto refuses the token (unknown, expired or revoked) or it lacks `documents:count` or
 `admin:count_all`, for example because its user is no admin anymore, Home Assistant asks for a
-new one: it reports "Authentication expired for Lekto" under **Settings → System → Repairs**,
+new one: it reports "Authentication expired for lekto.example.com" (the entry's name) under
+**Settings → System → Repairs**,
 and the entry under **Settings → Devices & services** offers to enter a new token. Make one as
 above and enter it there. It must come from the same Lekto instance; the address and the other
 settings stay.
@@ -52,8 +58,9 @@ settings stay.
 ## A right gone
 
 When the token loses an optional right, the integration sets itself up again without what that
-right opened, and reports it under **Settings → System → Repairs**, for example "Lekto:
-diagnostic entities off". The repair offers two ways out:
+right opened, and reports it under **Settings → System → Repairs**, for example "Lekto
+(lekto.example.com): diagnostic entities off", with the entry's name in brackets. The repair
+offers two ways out:
 
 - **Enter a new token** that has the right again; the entities come back.
 - **Remove the entities** that the right opened. The repair does not come back; a later token
@@ -65,13 +72,14 @@ Lekto and the integration each speak a version of Lekto's API. While Lekto is in
 change of the API raises its version, and the integration speaks exactly one; from 1.0 on, an
 integration also works with a Lekto that only added to the API. When they do not fit, the
 integration still sets up and goes on, as most of the API usually works, and reports it under
-**Settings → System → Repairs**, naming both versions:
+**Settings → System → Repairs**, naming the entry and both versions:
 
-- **"Lekto: update the integration"**: Lekto speaks a newer API. Update the integration in the
-  Marketplace.
-- **"Lekto: update Lekto"**: Lekto speaks an older API. Update Lekto where it runs.
-- **"Lekto: unreadable API version"**: Lekto names a version the integration cannot read. Update
-  both to their newest releases.
+- **"Lekto (lekto.example.com): update the integration"**: Lekto speaks a newer API. Update the
+  integration in the Marketplace.
+- **"Lekto (lekto.example.com): update Lekto"**: Lekto speaks an older API. Update Lekto where it
+  runs.
+- **"Lekto (lekto.example.com): unreadable API version"**: Lekto names a version the integration
+  cannot read. Update both to their newest releases.
 
 The repair cannot be fixed from Home Assistant; it goes once the two fit and the entry sets up
 again. Updating the integration restarts Home Assistant; after an update of Lekto the entry sets

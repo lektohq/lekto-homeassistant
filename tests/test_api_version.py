@@ -11,17 +11,11 @@ from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.lekto.const import DOMAIN
 
+from . import setup_integration
 from .const import me
 
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
-
-
-async def _set_up(hass: HomeAssistant, entry: MockConfigEntry) -> None:
-    if hass.config_entries.async_get_entry(entry.entry_id) is None:
-        entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
 
 
 def _api(lekto: MagicMock, api_version: str) -> None:
@@ -43,7 +37,7 @@ async def test_repair(
     """Another API raises a repair that says which side to update; the integration goes on."""
     _api(lekto, api_version)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     assert config_entry.state is ConfigEntryState.LOADED
     issue = ir.async_get(hass).async_get_issue(DOMAIN, f"{config_entry.entry_id}_api_version")
@@ -64,7 +58,7 @@ async def test_fits(hass: HomeAssistant, lekto: MagicMock, config_entry: MockCon
     """The API this integration speaks raises no repair."""
     _api(lekto, API_VERSION)
 
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
 
     assert (
         ir.async_get(hass).async_get_issue(DOMAIN, f"{config_entry.entry_id}_api_version") is None
@@ -76,7 +70,7 @@ async def test_gone_once_it_fits(
 ) -> None:
     """Set up again with an API that fits, the repair goes; a lost right's repair stays."""
     _api(lekto, "0.10")
-    await _set_up(hass, config_entry)
+    await setup_integration(hass, config_entry)
     issues = ir.async_get(hass)
     assert issues.async_get_issue(DOMAIN, f"{config_entry.entry_id}_api_version") is not None
     rights = [r for r in me().rights if r != "system:read"]

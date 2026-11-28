@@ -27,6 +27,15 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.usefixtures("mock_setup_entry")
 
+# What each flow shows when connecting fails.
+ERRORS = [
+    (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
+    (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
+    (LektoResponseError("no instance_id"), "unsupported"),
+    (LektoConnectionError("refused"), "cannot_connect"),
+    (RuntimeError("surprise"), "unknown"),
+]
+
 
 @pytest.mark.usefixtures("lekto")
 async def test_user(hass: HomeAssistant) -> None:
@@ -41,9 +50,30 @@ async def test_user(hass: HomeAssistant) -> None:
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Lekto"
+    assert result["title"] == "lekto.example.com"
     assert result["data"] == ENTRY_DATA
     assert result["result"].unique_id == INSTANCE_ID
+
+
+@pytest.mark.usefixtures("lekto")
+@pytest.mark.parametrize(
+    ("url", "title"),
+    [
+        ("http://127.128.129.23:8000", "127.128.129.23:8000"),
+        ("https://jane@lekto.example.com:8443/", "lekto.example.com:8443"),
+        ("http://[fd00::23]:8000", "[fd00::23]:8000"),
+    ],
+)
+async def test_user_title(hass: HomeAssistant, url: str, title: str) -> None:
+    """A new entry is named by the host of its address, with the port the address names."""
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], ENTRY_DATA | {CONF_URL: url}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == title
 
 
 async def test_user_shared_client(hass: HomeAssistant, lekto_class: MagicMock) -> None:
@@ -60,16 +90,7 @@ async def test_user_shared_client(hass: HomeAssistant, lekto_class: MagicMock) -
     lekto_class.assert_called_once_with(URL, TOKEN, client=get_async_client.return_value)
 
 
-@pytest.mark.parametrize(
-    ("error", "base"),
-    [
-        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
-        (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
-        (LektoResponseError("no instance_id"), "unsupported"),
-        (LektoConnectionError("refused"), "cannot_connect"),
-        (RuntimeError("surprise"), "unknown"),
-    ],
-)
+@pytest.mark.parametrize(("error", "base"), ERRORS)
 async def test_user_error(
     hass: HomeAssistant, lekto: MagicMock, error: Exception, base: str
 ) -> None:
@@ -98,7 +119,7 @@ async def test_user_error(
 async def test_user_missing_rights(
     hass: HomeAssistant, lekto: MagicMock, rights: list[str]
 ) -> None:
-    """A token that may not count the household is refused."""
+    """A token that may not count the household is refused; one that may sets the instance up."""
     lekto.connect.return_value = me(rights=rights)
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
 
@@ -109,6 +130,14 @@ async def test_user_missing_rights(
     placeholders = result["description_placeholders"]
     assert placeholders is not None
     assert placeholders["rights"] == "admin:count_all, documents:count"
+
+    lekto.connect.return_value = me()
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], ENTRY_DATA | {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == ENTRY_DATA | {CONF_API_TOKEN: NEW_TOKEN}
 
 
 async def test_user_already_configured(
@@ -147,16 +176,7 @@ async def test_reauth(
     assert lekto_class.call_args.args == (URL, NEW_TOKEN)
 
 
-@pytest.mark.parametrize(
-    ("error", "base"),
-    [
-        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
-        (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
-        (LektoResponseError("no instance_id"), "unsupported"),
-        (LektoConnectionError("refused"), "cannot_connect"),
-        (RuntimeError("surprise"), "unknown"),
-    ],
-)
+@pytest.mark.parametrize(("error", "base"), ERRORS)
 async def test_reauth_error(
     hass: HomeAssistant,
     lekto: MagicMock,
@@ -188,18 +208,27 @@ async def test_reauth_error(
 async def test_reauth_missing_rights(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
-    """A new token without the rights is refused, and the old one stays."""
+    """A new token without the rights is refused, and the old one stays until one has them."""
     config_entry.add_to_hass(hass)
     lekto.connect.return_value = me(rights=["documents:read"])
     result = await config_entry.start_reauth_flow(hass)
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+        result["flow_id"], {CONF_API_TOKEN: "lekto_madeupTokenWithoutRights"}
     )
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "missing_rights"}
     assert config_entry.data == ENTRY_DATA
+
+    lekto.connect.return_value = me()
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert config_entry.data == ENTRY_DATA | {CONF_API_TOKEN: NEW_TOKEN}
 
 
 async def test_reauth_other_instance(
@@ -242,16 +271,7 @@ async def test_reconfigure(
     assert lekto_class.call_args.args == (NEW_URL, TOKEN)
 
 
-@pytest.mark.parametrize(
-    ("error", "base"),
-    [
-        (LektoAuthenticationError(Problem(title="Unauthorized", status=401)), "invalid_auth"),
-        (LektoForbiddenError(Problem(title="Forbidden", status=403)), "missing_rights"),
-        (LektoResponseError("no instance_id"), "unsupported"),
-        (LektoConnectionError("refused"), "cannot_connect"),
-        (RuntimeError("surprise"), "unknown"),
-    ],
-)
+@pytest.mark.parametrize(("error", "base"), ERRORS)
 async def test_reconfigure_error(
     hass: HomeAssistant,
     lekto: MagicMock,
@@ -280,18 +300,24 @@ async def test_reconfigure_error(
 async def test_reconfigure_missing_rights(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
-    """Behind the new address the token lacks rights: the old address stays."""
+    """Behind the new address the token lacks rights: the old address stays until it has them."""
     config_entry.add_to_hass(hass)
     lekto.connect.return_value = me(rights=["documents:read"])
     result = await config_entry.start_reconfigure_flow(hass)
+    new = {CONF_URL: NEW_URL, CONF_VERIFY_SSL: True}
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_URL: NEW_URL, CONF_VERIFY_SSL: True}
-    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], new)
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "missing_rights"}
     assert config_entry.data == ENTRY_DATA
+
+    lekto.connect.return_value = me()
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], new)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert config_entry.data == ENTRY_DATA | new
 
 
 async def test_reconfigure_other_instance(

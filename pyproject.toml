@@ -20,7 +20,7 @@ dev = [
     "covdefaults>=2.3.0",
     "mypy>=2.4.1",
     "prek>=0.5.9",
-    "pylekto>=0.9.0",
+    "pylekto>=0.9.2",
     "pytest-cov>=7.1.0",
     # Home Assistant with the fixtures of its own tests, pinned to one release of it.
     "pytest-homeassistant>=2026.11.0",
@@ -66,6 +66,16 @@ strict = true
 files = ["custom_components", "tests"]
 # custom_components is a namespace package, as Home Assistant loads it.
 explicit_package_bases = true
+# What Home Assistant checks its strictly typed integrations with beyond strict
+# (script/hassfest/mypy_config.py of its core).
+warn_unreachable = true
+enable_error_code = [
+    "deprecated",
+    "explicit-override",
+    "ignore-without-code",
+    "redundant-self",
+    "truthy-iterable",
+]
 
 [[tool.mypy.overrides]]
 # pytest-homeassistant is typed but ships no py.typed marker.

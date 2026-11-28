@@ -4,7 +4,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING, Final, override
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -13,12 +13,14 @@ from pylekto import (
     LektoAuthenticationError,
     LektoError,
     LektoForbiddenError,
+    LektoRateLimitError,
     LektoServerError,
 )
 
 from .capabilities import Capability, capabilities, missing_rights
-from .const import DOMAIN
+from .const import DOMAIN, RETRY_AFTER_MAX
 from .names import LektoNames
+from .stream import LektoStream
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -37,20 +39,37 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+UPDATE_INTERVAL: Final = timedelta(seconds=60)
+
 type LektoConfigEntry = ConfigEntry[LektoCoordinator]
 
 
 @dataclass(frozen=True)
+class LektoDiagnostics:
+    """The state of Lekto's jobs and services and its versions: what ``system:read`` opens."""
+
+    jobs: JobsSummaryOut
+    search: SearchStatusOut | None
+    classifier: ClassifierStatusOut | None
+    version: VersionOut
+
+
+@dataclass(frozen=True)
 class LektoData:
-    """The numbers of every user's documents, and the state of Lekto's services and jobs."""
+    """The numbers of every user's documents, and Lekto's own state where the token may read it."""
 
     inbox: InboxSummaryOut
     documents: int
     health: Health
-    jobs: JobsSummaryOut | None
-    search: SearchStatusOut | None
-    classifier: ClassifierStatusOut | None
-    version: VersionOut | None
+    diagnostics: LektoDiagnostics | None
+
+    @property
+    def system(self) -> LektoDiagnostics:
+        """Return Lekto's own state, for the entities that exist only where the token reads it."""
+        if self.diagnostics is None:
+            msg = "Lekto's state is fetched only with the right system:read"
+            raise RuntimeError(msg)
+        return self.diagnostics
 
 
 class LektoCoordinator(DataUpdateCoordinator[LektoData]):
@@ -72,7 +91,7 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
             _LOGGER,
             config_entry=config_entry,
             name=DOMAIN,
-            update_interval=timedelta(seconds=60),
+            update_interval=UPDATE_INTERVAL,
         )
         self.client = client
         self.instance_id = str(me.instance_id)
@@ -81,6 +100,7 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
         self.rights = sorted(me.rights)
         self.capabilities = given
         self.names = LektoNames(client, given)
+        self.stream = LektoStream(self)
         self._reloading = False
 
     async def reload_if_rights_changed(self) -> None:
@@ -103,7 +123,7 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
     async def _async_update_data(self) -> LektoData:
         """Fetch the inbox's summary, the count of documents and the state of the services."""
         try:
-            inbox, count, health, (jobs, search, classifier, version) = await asyncio.gather(
+            inbox, count, health, diagnostics = await asyncio.gather(
                 self.client.inbox.summary(all_users=True),
                 self.client.documents.count(all_users=True),
                 self.client.health.get(),
@@ -113,54 +133,46 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
             raise ConfigEntryAuthFailed(
                 translation_domain=DOMAIN, translation_key="invalid_auth"
             ) from err
-        except LektoForbiddenError as err:
-            await self.reload_if_rights_changed()
-            raise UpdateFailed(
-                translation_domain=DOMAIN,
-                translation_key="update_failed",
-                translation_placeholders={"error": str(err)},
-            ) from err
         except LektoError as err:
+            if isinstance(err, LektoForbiddenError):
+                await self.reload_if_rights_changed()
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="update_failed",
                 translation_placeholders={"error": str(err)},
+                retry_after=self._wait(err),
             ) from err
-        # A Lekto updated in place may speak another API; setting up again checks it. Only a
-        # change between two answers counts, so replicas of two versions cannot reload in a loop.
-        before = self.data.version if self.data else None
+        # An updated Lekto may speak another API: set up again. So do replicas that take turns.
+        before = self.data.diagnostics if self.data else None
         if (
-            version is not None
+            diagnostics is not None
             and before is not None
-            and version.lekto_version != before.lekto_version
+            and diagnostics.version.lekto_version != before.version.lekto_version
             and not self._reloading
         ):
             self._reloading = True
             self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
-        return LektoData(
-            inbox=inbox,
-            documents=count.total,
-            health=health,
-            jobs=jobs,
-            search=search,
-            classifier=classifier,
-            version=version,
-        )
+        return LektoData(inbox=inbox, documents=count.total, health=health, diagnostics=diagnostics)
 
-    async def _diagnostics(
-        self,
-    ) -> tuple[
-        JobsSummaryOut | None, SearchStatusOut | None, ClassifierStatusOut | None, VersionOut | None
-    ]:
+    def _wait(self, err: LektoError) -> float | None:
+        """Take Lekto's wait only where it cannot hasten the fetches, and for a day at most."""
+        if not isinstance(err, LektoRateLimitError) or err.retry_after is None:
+            return None
+        wait = min(err.retry_after, RETRY_AFTER_MAX)
+        # At setup the wait only delays the next try; later it stands in place of the interval.
+        return wait if not self.data or wait > UPDATE_INTERVAL.total_seconds() else None
+
+    async def _diagnostics(self) -> LektoDiagnostics | None:
         """Fetch the state of the jobs, the services and the versions, if the token may."""
         if Capability.DIAGNOSTICS not in self.capabilities:
-            return None, None, None, None
-        return await asyncio.gather(
+            return None
+        jobs, search, classifier, version = await asyncio.gather(
             self.client.jobs.summary(),
             _unless_missing(self.client.search.status()),
             _unless_missing(self.client.classifier.status()),
             self.client.version.get(),
         )
+        return LektoDiagnostics(jobs=jobs, search=search, classifier=classifier, version=version)
 
 
 async def _unless_missing[T](request: Awaitable[T]) -> T | None:

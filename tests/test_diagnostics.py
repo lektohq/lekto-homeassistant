@@ -9,6 +9,7 @@ from pylekto import LektoServerError
 from pylekto.models import Problem
 from pytest_homeassistant.components.diagnostics import get_diagnostics_for_config_entry
 
+from . import setup_integration
 from .const import INSTANCE_ID, TOKEN, URL, me
 
 if TYPE_CHECKING:
@@ -24,9 +25,7 @@ async def test_diagnostics(
     hass: HomeAssistant, hass_client: ClientSessionGenerator, config_entry: MockConfigEntry
 ) -> None:
     """The file holds versions, rights and the numbers, but no token, address or name."""
-    config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_integration(hass, config_entry)
 
     diagnostics = await get_diagnostics_for_config_entry(hass, hass_client, config_entry)
 
@@ -88,9 +87,7 @@ async def test_diagnostics_without_search(
     missing = LektoServerError(Problem(title="Unavailable", status=503))
     lekto.search.status.side_effect = missing
     lekto.classifier.status.side_effect = missing
-    config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_integration(hass, config_entry)
 
     diagnostics = await get_diagnostics_for_config_entry(hass, hass_client, config_entry)
 
@@ -108,9 +105,7 @@ async def test_diagnostics_not_loaded(
 ) -> None:
     """An entry that failed to set up gives only its redacted self."""
     lekto.connect.return_value = me(instance_id="0195f3c2-7a10-7c4e-9b1d-2f6a8e4c1dff")
-    config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_integration(hass, config_entry)
 
     diagnostics = await get_diagnostics_for_config_entry(hass, hass_client, config_entry)
 

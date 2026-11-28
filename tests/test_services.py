@@ -1,6 +1,8 @@
 """The actions: upload a file, fetch the mailboxes, count and list documents."""
 
+import json
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 from uuid import UUID
@@ -10,11 +12,24 @@ import pytest
 from homeassistant.components.media_source import Unresolvable
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.setup import async_setup_component
+from homeassistant.util.yaml import load_yaml_dict
 from pylekto import LektoConflictError, LektoConnectionError, LektoValidationError
 from pylekto.models import Problem
 
-from custom_components.lekto.const import DOMAIN
+from custom_components.lekto.const import DOMAIN, EVENT_FIELDS
+from custom_components.lekto.services import (
+    ACCEPT,
+    COUNT_SCHEMA,
+    DEFAULT_LIMIT,
+    FETCH_MAIL_SCHEMA,
+    LANE_FILTERS,
+    LIST_FIELDS,
+    LIST_SCHEMA,
+    MAX_LIMIT,
+    UPLOAD_SCHEMA,
+)
 
+from . import setup_integration
 from .const import (
     ACCEPTED,
     CONTACTS,
@@ -31,11 +46,17 @@ from .const import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from pathlib import Path
 
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant.common import MockConfigEntry
 
+INTEGRATION = Path(__file__).parent.parent / "custom_components" / "lekto"
+SCHEMAS = {
+    "upload": UPLOAD_SCHEMA,
+    "fetch_mail": FETCH_MAIL_SCHEMA,
+    "count": COUNT_SCHEMA,
+    "list_documents": LIST_SCHEMA,
+}
 MEDIA_ID = "media-source://media_source/local/bill.pdf"
 FILE = {"media_content_id": MEDIA_ID, "media_content_type": "application/pdf"}
 
@@ -45,9 +66,7 @@ async def loaded(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> MockConfigEntry:
     """Return the entry, set up with every right."""
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    assert await setup_integration(hass, config_entry)
     assert config_entry.runtime_data.client is lekto
     return config_entry
 
@@ -184,8 +203,7 @@ async def test_upload_space_without_rights(
 ) -> None:
     """A space by name needs the right to list the spaces."""
     lekto.connect.return_value = me(rights=[r for r in me().rights if r != "spaces:read"])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     with pytest.raises(ServiceValidationError) as raised:
         await _call(hass, config_entry, "upload", file=FILE, space="Household")
@@ -223,8 +241,7 @@ async def test_lacks_rights(
     """An action whose rights the token lacks names them."""
     action, right, data = case
     lekto.connect.return_value = me(rights=[r for r in me().rights if r != right])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     with pytest.raises(ServiceValidationError) as raised:
         await _call(hass, config_entry, action, **data)
@@ -424,13 +441,27 @@ async def test_count_name_without_rights(
 ) -> None:
     """A filter by name needs the right to list the names."""
     lekto.connect.return_value = me(rights=[r for r in me().rights if r != "master_data:read"])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     with pytest.raises(ServiceValidationError) as raised:
         await _call(hass, config_entry, "count", tag=["Car"])
 
     assert raised.value.translation_key == "action_lacks_rights"
+
+
+async def test_count_names_never_fetched(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """While Lekto has given no names yet, a filter by name fails as Lekto does, not as unknown."""
+    lekto.contacts.list.side_effect = LektoConnectionError("refused")
+    assert await setup_integration(hass, config_entry)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    with pytest.raises(HomeAssistantError) as raised:
+        await _call(hass, config_entry, "count", contact=["Example Energy"])
+
+    assert raised.value.translation_key == "action_failed"
+    assert lekto.contacts.list.await_count == 1
 
 
 async def test_count_failed(hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry) -> None:
@@ -489,8 +520,7 @@ async def test_list_fields_without_names(
     """Without the rights to list names, the named fields stay empty."""
     rights = [r for r in me().rights if r not in {"master_data:read", "spaces:read"}]
     lekto.connect.return_value = me(rights=rights)
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     response = await _call(hass, config_entry, "list_documents", fields=["contact", "tags"])
 
@@ -513,8 +543,7 @@ async def test_list_without_rights(
 ) -> None:
     """The list needs the rights to read the household's documents."""
     lekto.connect.return_value = me(rights=["admin:count_all", "documents:count"])
-    config_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    assert await setup_integration(hass, config_entry)
 
     with pytest.raises(ServiceValidationError) as raised:
         await _call(hass, config_entry, "list_documents")
@@ -569,3 +598,37 @@ async def test_list_processing_and_unnamed(
 
     assert response["documents"][0]["lane"] is None
     assert response["documents"][0]["contact"] is None
+
+
+def test_services_yaml_in_step() -> None:
+    """The action editor offers what the schemas take: fields, lanes, file types, the limit."""
+    described = load_yaml_dict(str(INTEGRATION / "services.yaml"))
+
+    assert {
+        action: {name: field["required"] for name, field in described[action]["fields"].items()}
+        for action in described
+    } == {
+        action: {key.schema: isinstance(key, probatio.Required) for key in schema.schema}
+        for action, schema in SCHEMAS.items()
+    }
+    listed = described["list_documents"]["fields"]
+    counted = described["count"]["fields"]
+    assert counted == {name: listed[name] for name in counted}
+    assert described["upload"]["fields"]["file"]["selector"]["media"]["accept"] == ACCEPT
+    assert listed["lane"]["selector"]["select"]["options"] == LANE_FILTERS
+    assert listed["fields"]["selector"]["select"]["options"] == LIST_FIELDS
+    assert listed["limit"]["default"] == DEFAULT_LIMIT
+    assert listed["limit"]["selector"]["number"] == {"min": 1, "max": MAX_LIMIT, "mode": "box"}
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_selectors_translated(language: str) -> None:
+    """Every choice a selector offers has its text, and no text stands for a choice long gone."""
+    path = INTEGRATION / "translations" / f"{language}.json"
+    selectors = json.loads(path.read_text(encoding="utf-8"))["selector"]
+
+    assert {name: list(selector["options"]) for name, selector in selectors.items()} == {
+        "document_fields": LIST_FIELDS,
+        "event_fields": list(EVENT_FIELDS),
+        "lane": LANE_FILTERS,
+    }
