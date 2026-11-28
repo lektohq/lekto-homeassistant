@@ -433,6 +433,22 @@ async def test_count_name_without_rights(
     assert raised.value.translation_key == "action_lacks_rights"
 
 
+async def test_count_names_never_fetched(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """While Lekto has given no names yet, a filter by name fails as Lekto does, not as unknown."""
+    lekto.contacts.list.side_effect = LektoConnectionError("refused")
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    with pytest.raises(HomeAssistantError) as raised:
+        await _call(hass, config_entry, "count", contact=["Example Energy"])
+
+    assert raised.value.translation_key == "action_failed"
+    assert lekto.contacts.list.await_count == 1
+
+
 async def test_count_failed(hass: HomeAssistant, lekto: MagicMock, loaded: MockConfigEntry) -> None:
     """Lekto not answering fails the action."""
     lekto.documents.count.side_effect = LektoConnectionError("refused")

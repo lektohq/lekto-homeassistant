@@ -69,7 +69,7 @@ class LektoNames:
         self._capabilities = capabilities
         self._names: dict[Kind, dict[UUID, str]] = {}
         self._fetched: dict[Kind, float] = {}
-        self._failed: dict[Kind, float] = {}
+        self._failed: dict[Kind, tuple[float, LektoError]] = {}
         # Callers at the same time, such as the load at setup and a first event, fetch once.
         self._locks = {kind: asyncio.Lock() for kind in Kind}
 
@@ -115,18 +115,22 @@ class LektoNames:
             now = monotonic()
             stale = kind not in self._fetched or now - self._fetched[kind] > max_age
             # A refusing Lekto is asked again after a minute, not on every call.
-            failed_lately = kind in self._failed and now - self._failed[kind] <= MIN_AGE
+            failed_lately = kind in self._failed and now - self._failed[kind][0] <= MIN_AGE
             if stale and not failed_lately:
                 try:
                     items: Sequence[_Named] = await self._lists()[kind]()
-                except LektoError:
-                    self._failed[kind] = monotonic()
+                except LektoError as err:
+                    self._failed[kind] = (monotonic(), err)
                     raise
                 self._names[kind] = {item.id: item.name for item in items}
                 self._fetched[kind] = monotonic()
                 self._failed.pop(kind, None)
                 _LOGGER.debug("Fetched %d names of kind %s", len(items), kind)
-            return self._names.get(kind, {})
+            if kind not in self._names:
+                # Until Lekto is asked again its refusal stays the answer: no names at all
+                # would call every name unknown.
+                raise self._failed[kind][1]
+            return self._names[kind]
 
     def _lists(self) -> dict[Kind, Callable[[], Awaitable[Sequence[_Named]]]]:
         client = self._client
