@@ -119,7 +119,7 @@ async def test_user_error(
 async def test_user_missing_rights(
     hass: HomeAssistant, lekto: MagicMock, rights: list[str]
 ) -> None:
-    """A token that may not count the household is refused."""
+    """A token that may not count the household is refused; one that may sets the instance up."""
     lekto.connect.return_value = me(rights=rights)
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
 
@@ -130,6 +130,14 @@ async def test_user_missing_rights(
     placeholders = result["description_placeholders"]
     assert placeholders is not None
     assert placeholders["rights"] == "admin:count_all, documents:count"
+
+    lekto.connect.return_value = me()
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], ENTRY_DATA | {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == ENTRY_DATA | {CONF_API_TOKEN: NEW_TOKEN}
 
 
 async def test_user_already_configured(
@@ -209,18 +217,27 @@ async def test_reauth_error(
 async def test_reauth_missing_rights(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
-    """A new token without the rights is refused, and the old one stays."""
+    """A new token without the rights is refused, and the old one stays until one has them."""
     config_entry.add_to_hass(hass)
     lekto.connect.return_value = me(rights=["documents:read"])
     result = await config_entry.start_reauth_flow(hass)
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+        result["flow_id"], {CONF_API_TOKEN: "lekto_madeupTokenWithoutRights"}
     )
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "missing_rights"}
     assert config_entry.data == ENTRY_DATA
+
+    lekto.connect.return_value = me()
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_API_TOKEN: NEW_TOKEN}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert config_entry.data == ENTRY_DATA | {CONF_API_TOKEN: NEW_TOKEN}
 
 
 async def test_reauth_other_instance(
@@ -301,18 +318,24 @@ async def test_reconfigure_error(
 async def test_reconfigure_missing_rights(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
-    """Behind the new address the token lacks rights: the old address stays."""
+    """Behind the new address the token lacks rights: the old address stays until it has them."""
     config_entry.add_to_hass(hass)
     lekto.connect.return_value = me(rights=["documents:read"])
     result = await config_entry.start_reconfigure_flow(hass)
+    new = {CONF_URL: NEW_URL, CONF_VERIFY_SSL: True}
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_URL: NEW_URL, CONF_VERIFY_SSL: True}
-    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], new)
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "missing_rights"}
     assert config_entry.data == ENTRY_DATA
+
+    lekto.connect.return_value = me()
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], new)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert config_entry.data == ENTRY_DATA | new
 
 
 async def test_reconfigure_other_instance(
