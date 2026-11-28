@@ -115,14 +115,9 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
             raise ConfigEntryAuthFailed(
                 translation_domain=DOMAIN, translation_key="invalid_auth"
             ) from err
-        except LektoForbiddenError as err:
-            await self.reload_if_rights_changed()
-            raise UpdateFailed(
-                translation_domain=DOMAIN,
-                translation_key="update_failed",
-                translation_placeholders={"error": str(err)},
-            ) from err
         except LektoError as err:
+            if isinstance(err, LektoForbiddenError):
+                await self.reload_if_rights_changed()
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="update_failed",
