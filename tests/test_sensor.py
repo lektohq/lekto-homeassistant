@@ -87,6 +87,8 @@ async def test_sensors(
     )
     assert device is not None
     assert device.name == "Lekto"
+    assert device.manufacturer == "LektoHQ"
+    assert device.model == "0.9"
     assert device.entry_type is dr.DeviceEntryType.SERVICE
     assert device.sw_version == "0.17.3"
     assert device.configuration_url == URL

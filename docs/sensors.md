@@ -1,6 +1,7 @@
 # Sensors
 
-The integration adds one device, **Lekto**, for the instance. Its sensors count the documents of
+The integration adds one device, **Lekto**, for the instance; it names the version Lekto runs
+and, as its model, the version of Lekto's API. Its sensors count the documents of
 every user of the household, not only those of the token's user. They are fetched every 60 seconds;
 while Lekto does not answer, they are unavailable. With the rights of Lekto's events
 (`documents:read` and `admin:documents_all`, see [setup](setup.md)) they are also fetched at once

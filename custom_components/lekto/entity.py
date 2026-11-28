@@ -20,6 +20,8 @@ class LektoEntity(Entity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.instance_id)},
             name="Lekto",
+            manufacturer="LektoHQ",
+            model=coordinator.api_version,
             entry_type=DeviceEntryType.SERVICE,
             sw_version=coordinator.lekto_version,
             configuration_url=coordinator.config_entry.data[CONF_URL],
