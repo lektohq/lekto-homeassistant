@@ -13,6 +13,7 @@ from homeassistant.helpers import entity_registry as er
 from pylekto import (
     LektoAuthenticationError,
     LektoConnectionError,
+    LektoRateLimitError,
     LektoServerError,
 )
 from pylekto.models import Problem
@@ -126,6 +127,26 @@ async def loaded_entry(
     await _set_up(hass, config_entry)
     assert config_entry.runtime_data.client is lekto
     return config_entry
+
+
+@pytest.mark.usefixtures("loaded_entry")
+async def test_update_rate_limited(
+    hass: HomeAssistant, lekto: MagicMock, freezer: FrozenDateTimeFactory
+) -> None:
+    """Told by Lekto when to ask again, the next fetch of the numbers waits that long."""
+    lekto.inbox.summary.side_effect = LektoRateLimitError(
+        Problem(title="Too Many Requests", status=429), 300.0
+    )
+    await _next_update(hass, freezer)
+    asked = lekto.inbox.summary.await_count
+
+    await _next_update(hass, freezer)
+
+    assert lekto.inbox.summary.await_count == asked
+    freezer.tick(timedelta(seconds=240))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert lekto.inbox.summary.await_count == asked + 1
 
 
 @pytest.mark.usefixtures("loaded_entry")

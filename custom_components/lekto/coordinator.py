@@ -13,6 +13,7 @@ from pylekto import (
     LektoAuthenticationError,
     LektoError,
     LektoForbiddenError,
+    LektoRateLimitError,
     LektoServerError,
 )
 
@@ -122,6 +123,7 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
                 translation_domain=DOMAIN,
                 translation_key="update_failed",
                 translation_placeholders={"error": str(err)},
+                retry_after=err.retry_after if isinstance(err, LektoRateLimitError) else None,
             ) from err
         # A Lekto updated in place may speak another API; setting up again checks it. Only a
         # change between two answers counts: a version other than the one at setup that stays
