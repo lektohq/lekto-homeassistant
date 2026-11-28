@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
+from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from pylekto import (
@@ -149,15 +150,20 @@ async def test_reconnect_waits_at_most(
 async def test_refused(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
-    """A token Lekto stops accepting ends the stream and asks for a new one."""
+    """A token Lekto stops accepting ends the stream for good and asks for a new one."""
     lekto.events.listen.side_effect = streams(
-        LektoAuthenticationError(Problem(title="Unauthorized", status=401))
+        [], LektoAuthenticationError(Problem(title="Unauthorized", status=401))
     )
 
-    await _set_up(hass, config_entry)
+    with patch("custom_components.lekto.stream.sleep", AsyncMock()):
+        await _set_up(hass, config_entry)
 
     assert config_entry.state is ConfigEntryState.LOADED
-    assert lekto.events.listen.call_count == 1
+    assert lekto.events.listen.call_count == 2
+    assert not config_entry.runtime_data.stream.connected
+    state = hass.states.get("event.lekto_document")
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert [flow["context"]["source"] for flow in flows] == [SOURCE_REAUTH]
 

@@ -24,12 +24,14 @@
   right; enter a new one ([a new token](setup.md#a-new-token)).
 - **The entry fails with "another Lekto instance".** The address now leads to another instance:
   **Reconfigure** the entry with the right address.
-- **The document event never fires.** It needs `documents:read` and `admin:documents_all`; without
-  them it does not exist. A firewall or proxy that cuts long connections makes the integration
-  connect again and again; the log says "Lost the event stream" once, with the reason, and "The
-  event stream is back" once it flows again. After a stream that flowed the integration waits
-  five seconds, after each try that fails twice as long, up to five minutes, and longer when
-  Lekto asks it to.
+- **The document event does not exist.** It needs `documents:read` and `admin:documents_all`
+  ([setup](setup.md#the-api-token)).
+- **The document event is unavailable.** The integration has no connection to Lekto's event
+  stream; the log says "Lost the event stream" once, with the reason, and "The event stream is
+  back" once it flows again. The integration connects again by itself: five seconds after a
+  stream that flowed, after each try that fails twice as long, up to five minutes, and longer
+  when Lekto asks it to. If it comes and goes, a firewall or proxy between Home Assistant and
+  Lekto cuts long connections, or holds the stream back instead of passing it on as it comes.
 - **An action fails with "lacks the rights".** Each action needs rights of its own
   ([actions](actions.md)); give them to a new token.
 

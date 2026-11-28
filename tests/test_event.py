@@ -2,7 +2,7 @@
 
 import asyncio
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID
 
 import pytest
@@ -18,7 +18,7 @@ from custom_components.lekto.event import LektoDocumentEvent, document_fields
 from .const import DOCUMENT_ID, document, event, me, streams
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Callable
 
     from homeassistant.core import HomeAssistant
     from pylekto.models import EventMessage
@@ -113,7 +113,10 @@ async def test_event_while_numbers_fail(
     """While the numbers cannot be fetched, events still come through."""
     gate = asyncio.Event()
 
-    async def listen(**_filters: object) -> AsyncIterator[EventMessage]:
+    async def listen(
+        *, on_connected: Callable[[], None], **_filters: object
+    ) -> AsyncIterator[EventMessage]:
+        on_connected()
         await gate.wait()
         yield event("document.review_required", lane="yellow")
         await asyncio.Event().wait()
@@ -133,6 +136,41 @@ async def test_event_while_numbers_fail(
     assert state is not None
     assert state.attributes["event_type"] == "review_required"
     assert state.attributes["lane"] == "yellow"
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+async def test_unavailable_without_stream(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """While the stream is lost the entity is unavailable; it is back before the next event."""
+    again = asyncio.Event()
+    lekto.events.listen.side_effect = streams(
+        LektoConnectionError("refused"),
+        [event("document.received"), LektoConnectionError("broken off")],
+        [],
+    )
+
+    async def wait(_seconds: float) -> None:
+        await again.wait()
+        again.clear()
+
+    with patch("custom_components.lekto.stream.sleep", wait):
+        await _set_up(hass, config_entry)
+        never_connected = hass.states.get(ENTITY_ID)
+        again.set()
+        await hass.async_block_till_done()
+        lost = hass.states.get(ENTITY_ID)
+        again.set()
+        await hass.async_block_till_done()
+        back = hass.states.get(ENTITY_ID)
+
+    assert never_connected is not None
+    assert never_connected.state == STATE_UNAVAILABLE
+    assert lost is not None
+    assert lost.state == STATE_UNAVAILABLE
+    assert back is not None
+    assert back.state not in {STATE_UNAVAILABLE, STATE_UNKNOWN}
+    assert back.attributes["event_type"] == "received"
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 

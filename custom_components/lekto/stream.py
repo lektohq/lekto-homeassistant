@@ -44,6 +44,11 @@ def signal(entry: LektoConfigEntry) -> str:
     return f"{DOMAIN}_{entry.entry_id}_event"
 
 
+def connection_signal(entry: LektoConfigEntry) -> str:
+    """Return the dispatcher signal that goes out when the entry's stream is lost or flows again."""
+    return f"{DOMAIN}_{entry.entry_id}_stream"
+
+
 class LektoStream:
     """Lekto's events of one entry: passed on as they come, the stream connected again when lost."""
 
@@ -52,6 +57,7 @@ class LektoStream:
         self._coordinator = coordinator
         self._retry = RETRY_FIRST
         self._lost = False
+        self.connected = False
 
     async def listen(self) -> None:
         """Listen to Lekto's events until the entry unloads, connecting again when the stream ends.
@@ -89,12 +95,22 @@ class LektoStream:
         if self._lost:
             _LOGGER.info("The event stream is back")
             self._lost = False
+        self._set_connected(connected=True)
 
     def _lose(self, reason: object) -> None:
         """One line in the log for each loss, however many tries it takes to come back."""
         if not self._lost:
             _LOGGER.info("Lost the event stream: %s", reason)
             self._lost = True
+        self._set_connected(connected=False)
+
+    def _set_connected(self, *, connected: bool) -> None:
+        """Only a change goes out: a stream that is lost stays lost through every failed try."""
+        if connected == self.connected:
+            return
+        self.connected = connected
+        coordinator = self._coordinator
+        async_dispatcher_send(coordinator.hass, connection_signal(coordinator.config_entry))
 
     def _handle(self, event: EventMessage) -> None:
         """Every event goes out, so that entities need no stream of their own."""

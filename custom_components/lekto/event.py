@@ -13,7 +13,7 @@ from .capabilities import Capability
 from .const import CONF_EVENT_FIELDS, EVENT_FIELDS
 from .entity import LektoEntity
 from .names import FIELD_KINDS, Kind, name_or_none
-from .stream import signal
+from .stream import connection_signal, signal
 
 if TYPE_CHECKING:
     from collections.abc import Collection
@@ -64,12 +64,23 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
         # Events wait for their document's fields one after the other, so they stay in order.
         self._order = asyncio.Lock()
 
+    @property
+    @override
+    def available(self) -> bool:
+        """Follow the stream, not the numbers: the events come on a connection of their own."""
+        return self._entry.runtime_data.stream.connected
+
     @override
     async def async_added_to_hass(self) -> None:
-        """Take the events of the entry's stream."""
+        """Take the events of the entry's stream, and follow whether it flows."""
         await super().async_added_to_hass()
         self.async_on_remove(
             async_dispatcher_connect(self.hass, signal(self._entry), self._handle_event)
+        )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, connection_signal(self._entry), self.async_write_ha_state
+            )
         )
 
     @callback

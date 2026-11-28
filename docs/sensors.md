@@ -6,8 +6,8 @@ while Lekto does not answer, they are unavailable. With the rights of Lekto's ev
 (`documents:read` and `admin:documents_all`, see [setup](setup.md)) they are also fetched at once
 when Lekto reports that a document came in, was filed, needs a look, changed its lane, was
 confirmed, moved or deleted. The integration then listens to Lekto's events all the time and
-connects again when the connection drops, waiting a little longer after each quick failure, up to
-five minutes; it then fetches the numbers again, as Lekto does not send the events it missed.
+connects again when the connection drops, waiting longer after each try that fails, up to five
+minutes; it then fetches the numbers again, as Lekto does not send the events it missed.
 
 | Sensor | Value |
 | --- | --- |
