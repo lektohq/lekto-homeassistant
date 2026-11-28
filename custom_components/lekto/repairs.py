@@ -13,17 +13,18 @@ from .const import CONF_CAPABILITIES, DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.components.repairs import RepairsFlowResult
-    from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
     from pylekto.models import Me
 
+    from .coordinator import LektoConfigEntry
 
-def _issue_id(entry: ConfigEntry, capability: Capability) -> str:
+
+def _issue_id(entry: LektoConfigEntry, capability: Capability) -> str:
     return f"{entry.entry_id}_{capability}_lost"
 
 
 def note_issues(
-    hass: HomeAssistant, entry: ConfigEntry, me: Me, given: frozenset[Capability]
+    hass: HomeAssistant, entry: LektoConfigEntry, me: Me, given: frozenset[Capability]
 ) -> None:
     """Raise the repairs of a setup: each capability the token lost, and an API that may not fit.
 
@@ -70,7 +71,7 @@ def note_issues(
         hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_CAPABILITIES: kept})
 
 
-def _placeholders(entry: ConfigEntry, capability: Capability) -> dict[str, str]:
+def _placeholders(entry: LektoConfigEntry, capability: Capability) -> dict[str, str]:
     """Name the entry, as a household may run two instances, and the rights it lacks."""
     return {"name": entry.title, "rights": ", ".join(sorted(RIGHTS[capability]))}
 
@@ -78,7 +79,7 @@ def _placeholders(entry: ConfigEntry, capability: Capability) -> dict[str, str]:
 class CapabilityLostRepair(RepairsFlow):
     """Offer a new token, or to remove the entities of the capability the token lost."""
 
-    def __init__(self, entry: ConfigEntry, capability: Capability) -> None:
+    def __init__(self, entry: LektoConfigEntry, capability: Capability) -> None:
         """Remember which entry lost which capability."""
         super().__init__()
         self._entry = entry

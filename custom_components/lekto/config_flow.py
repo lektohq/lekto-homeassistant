@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, override
 
 import probatio
 from homeassistant.config_entries import (
-    ConfigEntry,
     ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
@@ -36,6 +35,8 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from pylekto.models import Me
+
+    from .coordinator import LektoConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ class LektoConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     @override
-    def async_get_options_flow(config_entry: ConfigEntry) -> LektoOptionsFlow:
+    def async_get_options_flow(config_entry: LektoConfigEntry) -> LektoOptionsFlow:
         """Return the flow that picks what the document event carries."""
         return LektoOptionsFlow()
 
@@ -185,7 +186,7 @@ class LektoOptionsFlow(OptionsFlow):
         """Offer the fields the token's rights allow."""
         if user_input is not None:
             return self.async_create_entry(data=user_input)
-        entry = self.config_entry
+        entry: LektoConfigEntry = self.config_entry
         # An entry that is not set up goes by the capabilities it last had.
         capabilities = (
             entry.runtime_data.capabilities
