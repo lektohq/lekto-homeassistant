@@ -46,7 +46,7 @@ async def async_setup_entry(
 ) -> None:
     """Add the instance's document event, if the token may follow the household's documents."""
     if Capability.EVENTS in entry.runtime_data.capabilities:
-        async_add_entities([LektoDocumentEvent(entry.runtime_data)])
+        async_add_entities([LektoDocumentEvent(entry)])
 
 
 class LektoDocumentEvent(LektoEntity, EventEntity):
@@ -57,31 +57,19 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
     # Titles and names stay out of the recorder's history: privacy first.
     _unrecorded_attributes = frozenset(EVENT_FIELDS)
 
-    def __init__(self, coordinator: LektoCoordinator) -> None:
-        """Make the document event of the instance."""
-        super().__init__(coordinator, "document")
+    def __init__(self, entry: LektoConfigEntry) -> None:
+        """Make the document event of the entry's instance."""
+        super().__init__(entry.runtime_data, "document")
+        self._entry = entry
         # Events wait for their document's fields one after the other, so they stay in order.
         self._order = asyncio.Lock()
-
-    @property
-    @override
-    def available(self) -> bool:
-        """Stay available while the numbers fail: the events come on their own stream."""
-        return True
-
-    @callback
-    @override
-    def _handle_coordinator_update(self) -> None:
-        """Keep the last event; a new count of the numbers changes nothing here."""
 
     @override
     async def async_added_to_hass(self) -> None:
         """Take the events of the entry's stream."""
         await super().async_added_to_hass()
         self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass, signal(self.coordinator.config_entry), self._handle_event
-            )
+            async_dispatcher_connect(self.hass, signal(self._entry), self._handle_event)
         )
 
     @callback
@@ -91,17 +79,20 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
         if event_type is None:
             return
         # A background task, so that unloading cancels events still waiting for their fields.
-        entry = self.coordinator.config_entry
-        entry.async_create_background_task(self.hass, self._trigger(event, event_type), "event")
+        self._entry.async_create_background_task(
+            self.hass, self._trigger(event, event_type), "event"
+        )
 
     async def _trigger(self, event: EventMessage, event_type: str) -> None:
         async with self._order:
             attributes: dict[str, str | list[str]] = {}
             if event.document_id is not None:
                 attributes["document_id"] = str(event.document_id)
-                wanted = self.coordinator.config_entry.options.get(CONF_EVENT_FIELDS, [])
+                wanted = self._entry.options.get(CONF_EVENT_FIELDS, [])
                 if wanted:
-                    attributes |= await document_fields(self.coordinator, event.document_id, wanted)
+                    attributes |= await document_fields(
+                        self._entry.runtime_data, event.document_id, wanted
+                    )
             lane = (event.model_extra or {}).get("lane")
             if lane in LANES:
                 attributes["lane"] = lane

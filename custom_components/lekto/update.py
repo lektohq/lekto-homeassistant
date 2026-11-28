@@ -6,7 +6,7 @@ from homeassistant.components.update import UpdateEntity
 from homeassistant.const import EntityCategory
 
 from .capabilities import Capability
-from .entity import LektoEntity
+from .entity import LektoCoordinatorEntity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -30,7 +30,7 @@ async def async_setup_entry(
         async_add_entities([LektoUpdate(coordinator)])
 
 
-class LektoUpdate(LektoEntity, UpdateEntity):
+class LektoUpdate(LektoCoordinatorEntity, UpdateEntity):
     """Lekto's version and the newest release; Lekto is updated where it runs, not from here."""
 
     # The device's main feature carries the device's name: update.lekto, not update.lekto_lekto.

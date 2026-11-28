@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import EntityCategory
 
 from .capabilities import Capability
-from .entity import LektoEntity
+from .entity import LektoCoordinatorEntity
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -150,7 +150,7 @@ async def async_setup_entry(
     )
 
 
-class LektoSensor(LektoEntity, SensorEntity):
+class LektoSensor(LektoCoordinatorEntity, SensorEntity):
     """A number of the household's documents, or a state of Lekto."""
 
     entity_description: LektoSensorEntityDescription
