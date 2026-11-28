@@ -4,6 +4,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
+from math import inf
 from typing import TYPE_CHECKING, Final, override
 
 from homeassistant.config_entries import ConfigEntry
@@ -140,10 +141,9 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
                 translation_domain=DOMAIN,
                 translation_key="update_failed",
                 translation_placeholders={"error": str(err)},
-                retry_after=_longer_wait(err),
+                retry_after=self._wait(err),
             ) from err
-        # A Lekto updated in place may speak another API; setting up again checks it. Replicas
-        # of two versions that answer in turn reload on each change; a lasting other one does not.
+        # An updated Lekto may speak another API: set up again. So do replicas that take turns.
         before = self.data.diagnostics if self.data else None
         if (
             diagnostics is not None
@@ -154,6 +154,15 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
             self._reloading = True
             self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
         return LektoData(inbox=inbox, documents=count.total, health=health, diagnostics=diagnostics)
+
+    def _wait(self, err: LektoError) -> float | None:
+        """Take Lekto's wait only where it can neither hasten the fetches nor end them."""
+        if not isinstance(err, LektoRateLimitError) or err.retry_after is None:
+            return None
+        # At setup Home Assistant bounds the wait; later it stands in place of the interval.
+        if not self.data or UPDATE_INTERVAL.total_seconds() < err.retry_after < inf:
+            return err.retry_after
+        return None
 
     async def _diagnostics(self) -> LektoDiagnostics | None:
         """Fetch the state of the jobs, the services and the versions, if the token may."""
@@ -166,13 +175,6 @@ class LektoCoordinator(DataUpdateCoordinator[LektoData]):
             self.client.version.get(),
         )
         return LektoDiagnostics(jobs=jobs, search=search, classifier=classifier, version=version)
-
-
-def _longer_wait(err: LektoError) -> float | None:
-    """Lekto's wait replaces the interval: a shorter one would ask a refusing Lekto more often."""
-    if not isinstance(err, LektoRateLimitError) or err.retry_after is None:
-        return None
-    return err.retry_after if err.retry_after > UPDATE_INTERVAL.total_seconds() else None
 
 
 async def _unless_missing[T](request: Awaitable[T]) -> T | None:

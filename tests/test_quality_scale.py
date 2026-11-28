@@ -17,8 +17,7 @@ from custom_components.lekto import PLATFORMS
 
 INTEGRATION = Path(__file__).parent.parent / "custom_components" / "lekto"
 
-# The rules of Home Assistant 2026.11 (ALL_RULES in script/hassfest/quality_scale.py of its
-# core). hassfest asks for each of them in the file; a later release may add some.
+# hassfest asks for each rule of its ALL_RULES (Home Assistant 2026.11); a release may add some.
 RULES = {
     "action-exceptions",
     "action-setup",
@@ -76,8 +75,7 @@ RULES = {
     "unique-config-entry",
 }
 
-# Where Home Assistant hands over the config entry: the functions hassfest looks at, by module,
-# with the position of the entry. The integration has only some of them; each it has is checked.
+# The functions hassfest looks at, with the position of the entry; the integration has some.
 ENTRY_FUNCTIONS = {
     "__init__": {
         "async_migrate_entry": 1,

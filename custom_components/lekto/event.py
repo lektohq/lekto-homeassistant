@@ -115,9 +115,9 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
                 self.async_write_ha_state()
         finally:
             self._taken -= 1
-        # The stream was lost while the event waited: the event showed first, now the loss does.
-        if not self.available:
-            self.async_write_ha_state()
+            # The stream was lost while the event waited: it showed first, now the loss does.
+            if not self.available:
+                self.async_write_ha_state()
 
 
 async def document_fields(

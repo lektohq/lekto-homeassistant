@@ -1,5 +1,6 @@
 """Setting up and unloading the integration."""
 
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import pytest
@@ -10,9 +11,11 @@ from pylekto import (
     LektoAuthenticationError,
     LektoConnectionError,
     LektoForbiddenError,
+    LektoRateLimitError,
     LektoResponseError,
 )
 from pylekto.models import Problem
+from pytest_homeassistant.common import async_fire_time_changed
 
 from custom_components.lekto.const import DOMAIN
 
@@ -22,6 +25,7 @@ from .const import NEW_URL, TOKEN, me
 if TYPE_CHECKING:
     from unittest.mock import MagicMock
 
+    from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
     from pylekto.models import Me
     from pytest_homeassistant.common import MockConfigEntry
@@ -170,3 +174,28 @@ async def test_reconfigure_repairs_wrong_instance(
     assert reloaded is not None
     assert reloaded.state is ConfigEntryState.LOADED
     assert lekto_class.call_args.args == (NEW_URL, TOKEN)
+
+
+async def test_setup_rate_limited(
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Refused for a while at setup, the next try waits as long as Lekto asks, however short."""
+    lekto.inbox.summary.side_effect = LektoRateLimitError(
+        Problem(title="Too Many Requests", status=429), 30.0
+    )
+    await setup_integration(hass, config_entry)
+    assert config_entry.state is ConfigEntryState.SETUP_RETRY
+    tried = lekto.connect.await_count
+
+    freezer.tick(timedelta(seconds=15))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert lekto.connect.await_count == tried
+    freezer.tick(timedelta(seconds=20))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert lekto.connect.await_count == tried + 1

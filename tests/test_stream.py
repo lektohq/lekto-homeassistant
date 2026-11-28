@@ -184,6 +184,28 @@ async def test_refused(
     assert [flow["context"]["source"] for flow in flows] == [SOURCE_REAUTH]
 
 
+async def test_cancelled_is_no_loss(
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Unloading or stopping cancels the listening, which is no loss.
+
+    A loss at shutdown would turn the entity unavailable, and its last event could not be restored.
+    """
+    lekto.events.listen.side_effect = streams([event("document.received")])
+
+    with caplog.at_level(logging.INFO, "custom_components.lekto.stream"):
+        await _set_up(hass, config_entry)
+        stream = config_entry.runtime_data.stream
+        assert await hass.config_entries.async_unload(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert stream.connected
+    assert _logged(caplog) == []
+
+
 async def test_unexpected_error(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:

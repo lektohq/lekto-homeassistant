@@ -146,14 +146,14 @@ async def test_update_rate_limited(
 
 
 @pytest.mark.usefixtures("loaded_entry")
-@pytest.mark.parametrize("retry_after", [2.0, None])
+@pytest.mark.parametrize("retry_after", [2.0, None, float("inf")])
 async def test_update_rate_limited_briefly(
     hass: HomeAssistant,
     lekto: MagicMock,
     freezer: FrozenDateTimeFactory,
     retry_after: float | None,
 ) -> None:
-    """A wait shorter than a minute, or none, leaves the numbers at one fetch a minute."""
+    """A wait shorter than a minute, none, or one without end leaves one fetch a minute."""
     lekto.inbox.summary.side_effect = LektoRateLimitError(
         Problem(title="Too Many Requests", status=429), retry_after
     )

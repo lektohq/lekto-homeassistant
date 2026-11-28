@@ -1,6 +1,7 @@
 """The kept names: ids by name, names by id, fetched when needed."""
 
 import asyncio
+import traceback
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 from uuid import UUID
@@ -132,11 +133,15 @@ async def test_failure_asked_again_after_a_minute(lekto: MagicMock, clock: Clock
     with pytest.raises(LektoConnectionError):
         await names.ids(Kind.TAG, "Car")
 
-    with pytest.raises(LektoConnectionError, match="refused"):
-        await names.ids(Kind.TAG, "Car")
+    depths = []
+    for _ in range(3):
+        with pytest.raises(LektoConnectionError, match="refused") as raised:
+            await names.ids(Kind.TAG, "Car")
+        depths.append(len(traceback.extract_tb(raised.value.__traceback__)))
     with pytest.raises(LektoConnectionError, match="refused"):
         await names.name(Kind.TAG, TAGS[0].id)
     assert lekto.tags.list.await_count == 1
+    assert len(set(depths)) == 1
 
     clock.now += MIN_AGE + 1
     lekto.tags.list.side_effect = None

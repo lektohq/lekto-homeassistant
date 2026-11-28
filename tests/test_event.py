@@ -224,6 +224,36 @@ async def test_event_taken_before_a_loss(
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 
+async def test_event_that_fails_is_no_longer_taken(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """An event whose fields fail by a bug counts no longer: the loss shows all the same."""
+    fetched = asyncio.Event()
+
+    async def get(_document_id: object) -> object:
+        await fetched.wait()
+        message = "a bug"
+        raise RuntimeError(message)
+
+    lekto.documents.get.side_effect = get
+    lekto.events.listen.side_effect = streams(
+        [event("document.received"), LektoConnectionError("broken off")]
+    )
+
+    with patch("custom_components.lekto.stream.sleep", lambda _: asyncio.Event().wait()):
+        await _set_up_with_fields(hass, config_entry, ["title"])
+        waiting = hass.states.get(ENTITY_ID)
+        fetched.set()
+        await hass.async_block_till_done()
+
+    assert waiting is not None
+    assert waiting.state == STATE_UNKNOWN
+    state = hass.states.get(ENTITY_ID)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
 async def test_event_after_a_reload_while_lost(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
