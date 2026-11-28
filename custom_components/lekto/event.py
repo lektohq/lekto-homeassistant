@@ -10,7 +10,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from pylekto import LektoError
 
 from .capabilities import Capability
-from .const import CONF_EVENT_FIELDS, EVENT_FIELDS, LANES
+from .const import CONF_EVENT_FIELDS, DOMAIN, EVENT_FIELDS, LANES
 from .entity import LektoEntity
 from .names import document_names
 from .stream import connection_signal, signal
@@ -91,7 +91,7 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
             return
         # A background task, so that unloading cancels events still waiting for their fields.
         self._entry.async_create_background_task(
-            self.hass, self._trigger(event, event_type), "event"
+            self.hass, self._trigger(event, event_type), f"{DOMAIN} document event"
         )
 
     async def _trigger(self, event: EventMessage, event_type: str) -> None:
