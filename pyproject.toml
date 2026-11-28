@@ -66,6 +66,16 @@ strict = true
 files = ["custom_components", "tests"]
 # custom_components is a namespace package, as Home Assistant loads it.
 explicit_package_bases = true
+# What Home Assistant checks its strictly typed integrations with beyond strict
+# (script/hassfest/mypy_config.py of its core).
+warn_unreachable = true
+enable_error_code = [
+    "deprecated",
+    "explicit-override",
+    "ignore-without-code",
+    "redundant-self",
+    "truthy-iterable",
+]
 
 [[tool.mypy.overrides]]
 # pytest-homeassistant is typed but ships no py.typed marker.
