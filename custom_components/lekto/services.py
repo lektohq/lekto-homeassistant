@@ -131,6 +131,15 @@ def _coordinator(call: ServiceCall, capability: Capability | None) -> LektoCoord
     return coordinator
 
 
+def _failed(err: LektoError) -> HomeAssistantError:
+    """Lekto refused or was not reachable: nothing the caller of the action did wrong."""
+    return HomeAssistantError(
+        translation_domain=DOMAIN,
+        translation_key="action_failed",
+        translation_placeholders={"error": str(err)},
+    )
+
+
 async def _upload(call: ServiceCall) -> ServiceResponse:
     """Lekto takes bytes; the user picks a file among Home Assistant's media."""
     coordinator = _coordinator(call, Capability.UPLOAD)
@@ -171,11 +180,7 @@ async def _upload(call: ServiceCall) -> ServiceResponse:
             translation_placeholders={"error": str(err)},
         ) from err
     except LektoError as err:
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="action_failed",
-            translation_placeholders={"error": str(err)},
-        ) from err
+        raise _failed(err) from err
     return {"document_id": str(accepted.id), "url": _link(coordinator, str(accepted.id))}
 
 
@@ -203,11 +208,7 @@ async def _ids(coordinator: LektoCoordinator, kind: Kind, name: str) -> list[UUI
     try:
         ids = await names.ids(kind, name)
     except LektoError as err:
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="action_failed",
-            translation_placeholders={"error": str(err)},
-        ) from err
+        raise _failed(err) from err
     if not ids:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
@@ -251,11 +252,7 @@ async def _count(call: ServiceCall) -> ServiceResponse:
     try:
         counted = await coordinator.client.documents.count(**filters)
     except LektoError as err:
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="action_failed",
-            translation_placeholders={"error": str(err)},
-        ) from err
+        raise _failed(err) from err
     return {"count": counted.total}
 
 
@@ -269,11 +266,7 @@ async def _list_documents(call: ServiceCall) -> ServiceResponse:
             limit=call.data[CONF_LIMIT], sort="-created_at", **filters
         )
     except LektoError as err:
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="action_failed",
-            translation_placeholders={"error": str(err)},
-        ) from err
+        raise _failed(err) from err
     documents: list[JsonValueType] = [
         await _listed(coordinator, document, wanted) for document in page.items
     ]
@@ -325,11 +318,7 @@ async def _fetch_mail(call: ServiceCall) -> ServiceResponse:
     try:
         mailboxes = await coordinator.client.mailboxes.list()
     except LektoError as err:
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="action_failed",
-            translation_placeholders={"error": str(err)},
-        ) from err
+        raise _failed(err) from err
     chosen = [
         mailbox
         for mailbox in mailboxes
