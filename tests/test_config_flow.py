@@ -41,9 +41,30 @@ async def test_user(hass: HomeAssistant) -> None:
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Lekto"
+    assert result["title"] == "lekto.example.com"
     assert result["data"] == ENTRY_DATA
     assert result["result"].unique_id == INSTANCE_ID
+
+
+@pytest.mark.usefixtures("lekto")
+@pytest.mark.parametrize(
+    ("url", "title"),
+    [
+        ("http://127.128.129.23:8000", "127.128.129.23:8000"),
+        ("https://jane@lekto.example.com:8443/", "lekto.example.com:8443"),
+        ("http://[fd00::23]:8000", "[fd00::23]:8000"),
+    ],
+)
+async def test_user_title(hass: HomeAssistant, url: str, title: str) -> None:
+    """A new entry is named by the host of its address, with the port the address names."""
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], ENTRY_DATA | {CONF_URL: url}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == title
 
 
 async def test_user_shared_client(hass: HomeAssistant, lekto_class: MagicMock) -> None:

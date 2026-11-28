@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
     from .coordinator import LektoConfigEntry
 
-# The unique ID is the instance's id, and a renamed entry's title may name the household.
+# The unique ID is the instance's id; the title names its host, or what the user called it.
 TO_REDACT = {CONF_API_TOKEN, CONF_URL, "unique_id", "title"}
 
 

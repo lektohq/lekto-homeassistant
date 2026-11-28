@@ -2,6 +2,7 @@
 
 import logging
 from typing import TYPE_CHECKING, Any, override
+from urllib.parse import urlsplit
 
 import probatio
 from homeassistant.config_entries import (
@@ -72,7 +73,7 @@ class LektoConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             user_input[CONF_URL] = _trimmed(user_input[CONF_URL])
             if not (errors := await self._check(user_input)):
-                return self.async_create_entry(title="Lekto", data=user_input)
+                return self.async_create_entry(title=_host(user_input[CONF_URL]), data=user_input)
         return self.async_show_form(
             step_id="user",
             data_schema=self.add_suggested_values_to_schema(USER_SCHEMA, user_input),
@@ -139,6 +140,11 @@ class LektoConfigFlow(ConfigFlow, domain=DOMAIN):
         else:
             self._abort_if_unique_id_mismatch()
         return {"base": "missing_rights"} if missing_rights(me.rights) else {}
+
+
+def _host(url: str) -> str:
+    """Name an entry by where its instance lives, so that two instances can be told apart."""
+    return urlsplit(url).netloc.rpartition("@")[2]
 
 
 def _trimmed(url: str) -> str:

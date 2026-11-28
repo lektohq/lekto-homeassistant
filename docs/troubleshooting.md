@@ -16,8 +16,9 @@
 
 - **The sensors are unavailable.** Lekto does not answer; the log says why once, and again when
   it answers. They come back by themselves.
-- **"Lekto: … off" under Repairs.** The token lost a right; see [a right gone](setup.md#a-right-gone).
-- **"Lekto: update …" or "Lekto: unreadable API version" under Repairs.** Lekto and the
+- **"Lekto (…): … off" under Repairs.** The token of the entry named in brackets lost a right;
+  see [a right gone](setup.md#a-right-gone).
+- **"Lekto (…): update …" or "Lekto (…): unreadable API version" under Repairs.** Lekto and the
   integration speak different versions of the API; see
   [another version of Lekto's API](setup.md#another-version-of-lektos-api).
 - **Home Assistant asks for a new token.** Lekto no longer accepts the token or it lost a required
