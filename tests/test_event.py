@@ -10,6 +10,7 @@ from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, State, callback
 from homeassistant.helpers.event import async_track_state_change_event
 from pylekto import LektoConnectionError
+from pylekto.models import EventMessage
 from pytest_homeassistant.common import mock_restore_cache_with_extra_data
 
 from custom_components.lekto.const import CONF_EVENT_FIELDS, EVENT_FIELDS
@@ -21,7 +22,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
     from homeassistant.core import HomeAssistant
-    from pylekto.models import EventMessage
     from pytest_homeassistant.common import MockConfigEntry
 
 pytestmark = pytest.mark.stream
@@ -88,6 +88,25 @@ async def test_event(
     assert state.attributes["event_type"] == event_type
     for name in ("document_id", "lane"):
         assert state.attributes.get(name) == attributes.get(name)
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+async def test_lane_named_by_the_model(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """The lane arrives as well once pylekto's model names it instead of leaving it an extra."""
+
+    class WithLane(EventMessage):
+        lane: str | None = None
+
+    message = event("document.review_required", lane="red")
+    lekto.events.listen.side_effect = streams([WithLane.model_validate(message.model_dump())])
+
+    await _set_up(hass, config_entry)
+
+    state = hass.states.get(ENTITY_ID)
+    assert state is not None
+    assert state.attributes["lane"] == "red"
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 

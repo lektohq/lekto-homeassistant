@@ -104,7 +104,8 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
                     attributes |= await document_fields(
                         self._entry.runtime_data, event.document_id, wanted
                     )
-            lane = (event.model_extra or {}).get("lane")
+            # Read as an attribute: it is one whether pylekto's model names the lane or not.
+            lane = getattr(event, "lane", None)
             if lane in REVIEW_LANES:
                 attributes["lane"] = lane
             self._trigger_event(event_type, attributes)
