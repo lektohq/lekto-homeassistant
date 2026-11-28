@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from .coordinator import LektoConfigEntry
 
 
-def _issue_id(entry: LektoConfigEntry, capability: Capability) -> str:
+def _lost_issue_id(entry: LektoConfigEntry, capability: Capability) -> str:
     return f"{entry.entry_id}_{capability}_lost"
 
 
@@ -41,7 +41,7 @@ def note_issues(
             ir.async_create_issue(
                 hass,
                 DOMAIN,
-                _issue_id(entry, capability),
+                _lost_issue_id(entry, capability),
                 config_entry_id=entry.entry_id,
                 is_fixable=True,
                 severity=ir.IssueSeverity.WARNING,
@@ -107,7 +107,7 @@ class CapabilityLostRepair(RepairsFlow):
         if user_input is None:
             return self.async_show_form(step_id="remove_entities", data_schema=probatio.Schema({}))
         # A new token may have brought the capability back while the flow was open.
-        issue = _issue_id(self._entry, self._capability)
+        issue = _lost_issue_id(self._entry, self._capability)
         if ir.async_get(self.hass).async_get_issue(DOMAIN, issue) is None:
             return self.async_abort(reason="issue_gone")
         registry = er.async_get(self.hass)
