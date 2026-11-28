@@ -32,7 +32,10 @@
   back" once it flows again. The integration connects again by itself: five seconds after a
   stream that flowed, after each try that fails twice as long, up to five minutes, and longer
   when Lekto asks it to. If it comes and goes, a firewall or proxy between Home Assistant and
-  Lekto cuts long connections, or holds the stream back instead of passing it on as it comes.
+  Lekto cuts long connections; if it stays unavailable while the sensors work, a proxy holds
+  the stream back instead of passing it on as it comes.
+- **An automation misses a document event.** Let its trigger skip only changes from
+  `unavailable`, not from `unknown` ([document event](events.md)).
 - **An action fails with "lacks the rights".** Each action needs rights of its own
   ([actions](actions.md)); give them to a new token.
 

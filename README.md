@@ -144,7 +144,7 @@ automation:
     triggers:
       - trigger: state
         entity_id: event.lekto_document
-        not_from: [unavailable, unknown]
+        not_from: unavailable
     conditions:
       - condition: state
         entity_id: event.lekto_document

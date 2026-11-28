@@ -36,7 +36,7 @@ automation:
       - trigger: state
         entity_id: event.lekto_document
         # After a restart or a lost connection the last event is back; it is no new one.
-        not_from: [unavailable, unknown]
+        not_from: unavailable
     conditions:
       - condition: state
         entity_id: event.lekto_document

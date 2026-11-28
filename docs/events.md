@@ -7,8 +7,12 @@ needed, the lane; no title, contact or type, which stay in Lekto. It needs the r
 
 The events come on a connection of their own, Lekto's event stream. While the integration has no
 such connection, the entity is unavailable; it is back as soon as the stream flows again, before
-the next event, with the last event it had. The sensors' numbers have no part in this: while they
-cannot be fetched, events still come.
+the next event. The sensors' numbers have no part in this: while they cannot be fetched, events
+still come.
+
+An automation should skip a change from `unavailable`, which is the entity coming back, and no
+other: the state is unknown until the first event, and again after Home Assistant restarted or
+the entry was set up again while the stream was lost, so the next event changes it from unknown.
 
 | Event type (`event_type`) | Shown as | When | Attributes |
 | --- | --- | --- | --- |
@@ -52,7 +56,7 @@ automation:
       - trigger: state
         entity_id: event.lekto_document
         # After a restart or a lost connection the last event is back; it is no new one.
-        not_from: [unavailable, unknown]
+        not_from: unavailable
     conditions:
       - condition: state
         entity_id: event.lekto_document

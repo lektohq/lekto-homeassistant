@@ -63,12 +63,13 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
         self._entry = entry
         # Events wait for their document's fields one after the other, so they stay in order.
         self._order = asyncio.Lock()
+        self._taken = 0
 
     @property
     @override
     def available(self) -> bool:
-        """Follow the stream, not the numbers: the events come on a connection of their own."""
-        return self._entry.runtime_data.stream.connected
+        """Follow the stream, not the numbers; an event taken before a loss still shows first."""
+        return self._entry.runtime_data.stream.connected or self._taken > 0
 
     @override
     async def async_added_to_hass(self) -> None:
@@ -89,26 +90,33 @@ class LektoDocumentEvent(LektoEntity, EventEntity):
         event_type = EVENT_TYPES.get(event.type)
         if event_type is None:
             return
+        self._taken += 1
         # A background task, so that unloading cancels events still waiting for their fields.
         self._entry.async_create_background_task(
             self.hass, self._trigger(event, event_type), f"{DOMAIN} document event"
         )
 
     async def _trigger(self, event: EventMessage, event_type: str) -> None:
-        async with self._order:
-            attributes: dict[str, str | list[str]] = {}
-            if event.document_id is not None:
-                attributes["document_id"] = str(event.document_id)
-                wanted = self._entry.options.get(CONF_EVENT_FIELDS, [])
-                if wanted:
-                    attributes |= await document_fields(
-                        self._entry.runtime_data, event.document_id, wanted
-                    )
-            # Read as an attribute: it is one whether pylekto's model names the lane or not.
-            lane = getattr(event, "lane", None)
-            if lane in REVIEW_LANES:
-                attributes["lane"] = lane
-            self._trigger_event(event_type, attributes)
+        try:
+            async with self._order:
+                attributes: dict[str, str | list[str]] = {}
+                if event.document_id is not None:
+                    attributes["document_id"] = str(event.document_id)
+                    wanted = self._entry.options.get(CONF_EVENT_FIELDS, [])
+                    if wanted:
+                        attributes |= await document_fields(
+                            self._entry.runtime_data, event.document_id, wanted
+                        )
+                # Read as an attribute: it is one whether pylekto's model names the lane or not.
+                lane = getattr(event, "lane", None)
+                if lane in REVIEW_LANES:
+                    attributes["lane"] = lane
+                self._trigger_event(event_type, attributes)
+                self.async_write_ha_state()
+        finally:
+            self._taken -= 1
+        # The stream was lost while the event waited: the event showed first, now the loss does.
+        if not self.available:
             self.async_write_ha_state()
 
 

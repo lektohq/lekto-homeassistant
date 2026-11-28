@@ -188,6 +188,79 @@ async def test_unavailable_without_stream(
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 
+async def test_event_taken_before_a_loss(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """An event that waits for its fields when the stream is lost still shows before the loss."""
+    fetched = asyncio.Event()
+    states: list[str] = []
+
+    async def get(_document_id: object) -> object:
+        await fetched.wait()
+        return document()
+
+    @callback
+    def changed(change: Event[EventStateChangedData]) -> None:
+        state = change.data["new_state"]
+        assert state is not None
+        states.append(state.state)
+
+    lekto.documents.get.side_effect = get
+    lekto.events.listen.side_effect = streams(
+        [event("document.received"), LektoConnectionError("broken off")]
+    )
+    async_track_state_change_event(hass, ENTITY_ID, changed)
+
+    with patch("custom_components.lekto.stream.sleep", lambda _: asyncio.Event().wait()):
+        await _set_up_with_fields(hass, config_entry, ["title"])
+        assert not config_entry.runtime_data.stream.connected
+        assert states == [STATE_UNAVAILABLE, STATE_UNKNOWN]
+        fetched.set()
+        await hass.async_block_till_done()
+
+    assert len(states) == 4
+    assert states[2] not in {STATE_UNAVAILABLE, STATE_UNKNOWN}
+    assert states[3] == STATE_UNAVAILABLE
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+async def test_event_after_a_reload_while_lost(
+    hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
+) -> None:
+    """Reloaded while the stream is lost, the entity knows no time of its last event any more.
+
+    Home Assistant restores that time from the state at removal, which was unavailable. The next
+    event then changes the state from unknown: a trigger must not skip changes from unknown.
+    """
+    changes: list[tuple[str | None, str]] = []
+
+    @callback
+    def changed(change: Event[EventStateChangedData]) -> None:
+        old, new = change.data["old_state"], change.data["new_state"]
+        assert new is not None
+        changes.append((old.state if old else None, new.state))
+
+    lekto.events.listen.side_effect = streams(
+        [event("document.received"), LektoConnectionError("broken off")],
+        [event("document.filed")],
+    )
+
+    with patch("custom_components.lekto.stream.sleep", lambda _: asyncio.Event().wait()):
+        await setup_integration(hass, config_entry)
+        lost = hass.states.get(ENTITY_ID)
+        async_track_state_change_event(hass, ENTITY_ID, changed)
+        assert await hass.config_entries.async_reload(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert lost is not None
+    assert lost.state == STATE_UNAVAILABLE
+    state = hass.states.get(ENTITY_ID)
+    assert state is not None
+    assert state.attributes["event_type"] == "filed"
+    assert changes[-2:] == [(STATE_UNAVAILABLE, STATE_UNKNOWN), (STATE_UNKNOWN, state.state)]
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
 async def test_restored(
     hass: HomeAssistant, lekto: MagicMock, config_entry: MockConfigEntry
 ) -> None:
