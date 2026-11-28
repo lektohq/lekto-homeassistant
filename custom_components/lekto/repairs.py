@@ -8,7 +8,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from pylekto import API_VERSION, api_fit
 
-from .capabilities import ENTITY_KEYS, RIGHTS, Capability
+from .capabilities import ENTITY_KEYS, RIGHTS, Capability, rights_text
 from .const import CONF_CAPABILITIES, DOMAIN
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ def note_issues(
 
 def _placeholders(entry: LektoConfigEntry, capability: Capability) -> dict[str, str]:
     """Name the entry, as a household may run two instances, and the rights it lacks."""
-    return {"name": entry.title, "rights": ", ".join(sorted(RIGHTS[capability]))}
+    return {"name": entry.title, "rights": rights_text(RIGHTS[capability])}
 
 
 class CapabilityLostRepair(RepairsFlow):

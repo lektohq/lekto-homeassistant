@@ -52,6 +52,11 @@ ENTITY_KEYS: Final[dict[Capability, frozenset[str]]] = {
 }
 
 
+def rights_text(rights: Iterable[str]) -> str:
+    """Write ``rights`` as a message names them: sorted, so the same rights always read alike."""
+    return ", ".join(sorted(rights))
+
+
 def missing_rights(rights: Iterable[str]) -> list[str]:
     """Return the rights the integration cannot do without that ``rights`` lack, sorted."""
     return sorted(REQUIRED_RIGHTS.difference(rights))

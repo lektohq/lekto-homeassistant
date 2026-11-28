@@ -27,7 +27,7 @@ from pylekto import (
 )
 
 from . import create_client
-from .capabilities import Capability, missing_rights
+from .capabilities import Capability, missing_rights, rights_text
 from .const import CONF_CAPABILITIES, CONF_EVENT_FIELDS, DOMAIN, EVENT_FIELDS, REQUIRED_RIGHTS
 from .names import FIELD_KINDS, NEEDS
 
@@ -67,7 +67,7 @@ TOKEN_SCHEMA = probatio.Schema(
 )
 
 PLACEHOLDERS = {
-    "rights": ", ".join(sorted(REQUIRED_RIGHTS)),
+    "rights": rights_text(REQUIRED_RIGHTS),
     "example_url": "https://lekto.example.com",
 }
 

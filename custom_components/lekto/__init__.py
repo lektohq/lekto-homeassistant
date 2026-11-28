@@ -18,7 +18,7 @@ from pylekto import (
     LektoResponseError,
 )
 
-from .capabilities import Capability, capabilities, missing_rights
+from .capabilities import Capability, capabilities, missing_rights, rights_text
 from .const import DOMAIN, REQUIRED_RIGHTS
 from .coordinator import LektoConfigEntry, LektoCoordinator
 from .repairs import note_issues
@@ -64,7 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
         raise ConfigEntryAuthFailed(
             translation_domain=DOMAIN,
             translation_key="missing_rights",
-            translation_placeholders={"rights": ", ".join(sorted(REQUIRED_RIGHTS))},
+            translation_placeholders={"rights": rights_text(REQUIRED_RIGHTS)},
         ) from err
     except LektoResponseError as err:
         raise ConfigEntryError(translation_domain=DOMAIN, translation_key="unsupported") from err
@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LektoConfigEntry) -> Non
         raise ConfigEntryAuthFailed(
             translation_domain=DOMAIN,
             translation_key="missing_rights",
-            translation_placeholders={"rights": ", ".join(missing)},
+            translation_placeholders={"rights": rights_text(missing)},
         )
     given = capabilities(me.rights)
     note_issues(hass, entry, me, given)

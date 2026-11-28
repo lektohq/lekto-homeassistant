@@ -20,7 +20,7 @@ from homeassistant.helpers.os_error import os_read_error
 from homeassistant.helpers.selector import MediaSelector
 from pylekto import LektoConflictError, LektoError, LektoValidationError
 
-from .capabilities import RIGHTS, Capability
+from .capabilities import RIGHTS, Capability, rights_text
 from .const import DOMAIN
 from .names import FIELD_KINDS, NEEDS, Kind, name_or_none
 
@@ -126,7 +126,7 @@ def _coordinator(call: ServiceCall, capability: Capability | None) -> LektoCoord
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="action_lacks_rights",
-            translation_placeholders={"rights": ", ".join(sorted(RIGHTS[capability]))},
+            translation_placeholders={"rights": rights_text(RIGHTS[capability])},
         )
     return coordinator
 
@@ -198,7 +198,7 @@ async def _ids(coordinator: LektoCoordinator, kind: Kind, name: str) -> list[UUI
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="action_lacks_rights",
-            translation_placeholders={"rights": ", ".join(sorted(RIGHTS[NEEDS[kind]]))},
+            translation_placeholders={"rights": rights_text(RIGHTS[NEEDS[kind]])},
         )
     try:
         ids = await names.ids(kind, name)
