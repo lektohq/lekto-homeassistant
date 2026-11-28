@@ -16,7 +16,8 @@ automation:
       - trigger: state
         entity_id: sensor.lekto_inbox_worst_lane
         to: red
-        not_from: [unavailable, unknown]
+        # Back after Lekto did not answer is no news; red in an inbox that was empty is.
+        not_from: unavailable
     actions:
       - action: notify.notify
         data:
