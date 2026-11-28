@@ -25,6 +25,8 @@ class Capability(StrEnum):
     DOCUMENTS = "documents"
 
 
+# The events and the list of documents need the same rights but stay two capabilities: the
+# events bring entities, whose loss raises a repair; the list is an action that names its rights.
 RIGHTS: Final[dict[Capability, frozenset[str]]] = {
     Capability.DIAGNOSTICS: frozenset({"system:read"}),
     Capability.EVENTS: frozenset({"documents:read", "admin:documents_all"}),
