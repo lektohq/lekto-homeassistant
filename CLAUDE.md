@@ -49,7 +49,7 @@ fails on a tag.
 ## Rules
 
 - The integration talks to Lekto only through pylekto; no HTTP of its own. `manifest.json` pins
-  pylekto exactly (`pylekto==0.9.0`), as Home Assistant requires; Renovate raises it.
+  pylekto exactly (`pylekto==0.9.2`), as Home Assistant requires; Renovate raises it.
 - Home Assistant comes with `pytest-homeassistant`, one package per Home Assistant release, which
   pins `homeassistant` exactly; Renovate raises it together with the image of hassfest.
 - The integration aims at the highest tier of Home Assistant's quality scale (Platinum);
