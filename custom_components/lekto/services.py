@@ -52,6 +52,9 @@ CONF_FIELDS = "fields"
 LANE_FILTERS = [*LANES, "processing"]
 LIST_FIELDS = ["lane", "contact", "document_type", "tags", "space"]
 
+DEFAULT_LIMIT = 10
+MAX_LIMIT = 50
+
 # Only what Lekto processes is offered, so the picker shows no file Lekto would refuse.
 ACCEPT = ["application/pdf", "image/jpeg", "image/png", "image/tiff", "message/rfc822"]
 
@@ -78,8 +81,8 @@ COUNT_SCHEMA = probatio.Schema(FILTERS)
 LIST_SCHEMA = probatio.Schema(
     {
         **FILTERS,
-        probatio.Optional(CONF_LIMIT, default=10): probatio.All(
-            probatio.Coerce(int), probatio.Range(min=1, max=50)
+        probatio.Optional(CONF_LIMIT, default=DEFAULT_LIMIT): probatio.All(
+            probatio.Coerce(int), probatio.Range(min=1, max=MAX_LIMIT)
         ),
         probatio.Optional(CONF_FIELDS): probatio.All(cv.ensure_list, [probatio.In(LIST_FIELDS)]),
     }

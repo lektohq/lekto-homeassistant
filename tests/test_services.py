@@ -1,6 +1,8 @@
 """The actions: upload a file, fetch the mailboxes, count and list documents."""
 
+import json
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 from uuid import UUID
@@ -10,10 +12,22 @@ import pytest
 from homeassistant.components.media_source import Unresolvable
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.setup import async_setup_component
+from homeassistant.util.yaml import load_yaml_dict
 from pylekto import LektoConflictError, LektoConnectionError, LektoValidationError
 from pylekto.models import Problem
 
-from custom_components.lekto.const import DOMAIN
+from custom_components.lekto.const import DOMAIN, EVENT_FIELDS
+from custom_components.lekto.services import (
+    ACCEPT,
+    COUNT_SCHEMA,
+    DEFAULT_LIMIT,
+    FETCH_MAIL_SCHEMA,
+    LANE_FILTERS,
+    LIST_FIELDS,
+    LIST_SCHEMA,
+    MAX_LIMIT,
+    UPLOAD_SCHEMA,
+)
 
 from .const import (
     ACCEPTED,
@@ -31,11 +45,17 @@ from .const import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from pathlib import Path
 
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant.common import MockConfigEntry
 
+INTEGRATION = Path(__file__).parent.parent / "custom_components" / "lekto"
+SCHEMAS = {
+    "upload": UPLOAD_SCHEMA,
+    "fetch_mail": FETCH_MAIL_SCHEMA,
+    "count": COUNT_SCHEMA,
+    "list_documents": LIST_SCHEMA,
+}
 MEDIA_ID = "media-source://media_source/local/bill.pdf"
 FILE = {"media_content_id": MEDIA_ID, "media_content_type": "application/pdf"}
 
@@ -585,3 +605,35 @@ async def test_list_processing_and_unnamed(
 
     assert response["documents"][0]["lane"] is None
     assert response["documents"][0]["contact"] is None
+
+
+def test_services_yaml_in_step() -> None:
+    """The action editor offers what the schemas take: fields, lanes, file types, the limit."""
+    described = load_yaml_dict(str(INTEGRATION / "services.yaml"))
+
+    assert {
+        action: {name: field["required"] for name, field in described[action]["fields"].items()}
+        for action in described
+    } == {
+        action: {key.schema: isinstance(key, probatio.Required) for key in schema.schema}
+        for action, schema in SCHEMAS.items()
+    }
+    listed = described["list_documents"]["fields"]
+    assert described["upload"]["fields"]["file"]["selector"]["media"]["accept"] == ACCEPT
+    assert listed["lane"]["selector"]["select"]["options"] == LANE_FILTERS
+    assert listed["fields"]["selector"]["select"]["options"] == LIST_FIELDS
+    assert listed["limit"]["default"] == DEFAULT_LIMIT
+    assert listed["limit"]["selector"]["number"] == {"min": 1, "max": MAX_LIMIT, "mode": "box"}
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_selectors_translated(language: str) -> None:
+    """Every choice a selector offers has its text, and no text stands for a choice long gone."""
+    path = INTEGRATION / "translations" / f"{language}.json"
+    selectors = json.loads(path.read_text(encoding="utf-8"))["selector"]
+
+    assert {name: list(selector["options"]) for name, selector in selectors.items()} == {
+        "document_fields": LIST_FIELDS,
+        "event_fields": list(EVENT_FIELDS),
+        "lane": LANE_FILTERS,
+    }

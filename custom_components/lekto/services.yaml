@@ -1,6 +1,6 @@
 upload:
   fields:
-    config_entry_id:
+    config_entry_id: &config_entry_id
       required: true
       selector:
         config_entry:
@@ -25,27 +25,19 @@ upload:
         text:
 fetch_mail:
   fields:
-    config_entry_id:
-      required: true
-      selector:
-        config_entry:
-          integration: lekto
+    config_entry_id: *config_entry_id
     mailbox:
       required: false
       selector:
         text:
 count:
   fields:
-    config_entry_id:
-      required: true
-      selector:
-        config_entry:
-          integration: lekto
-    inbox:
+    config_entry_id: *config_entry_id
+    inbox: &inbox
       required: false
       selector:
         boolean:
-    lane:
+    lane: &lane
       required: false
       selector:
         select:
@@ -56,84 +48,30 @@ count:
             - processing
           multiple: true
           translation_key: lane
-    contact:
+    contact: &names
       required: false
       selector:
         text:
           multiple: true
-    document_type:
-      required: false
-      selector:
-        text:
-          multiple: true
-    tag:
-      required: false
-      selector:
-        text:
-          multiple: true
-    space:
-      required: false
-      selector:
-        text:
-          multiple: true
-    date_from:
+    document_type: *names
+    tag: *names
+    space: *names
+    date_from: &date
       required: false
       selector:
         date:
-    date_to:
-      required: false
-      selector:
-        date:
+    date_to: *date
 list_documents:
   fields:
-    config_entry_id:
-      required: true
-      selector:
-        config_entry:
-          integration: lekto
-    inbox:
-      required: false
-      selector:
-        boolean:
-    lane:
-      required: false
-      selector:
-        select:
-          options:
-            - green
-            - yellow
-            - red
-            - processing
-          multiple: true
-          translation_key: lane
-    contact:
-      required: false
-      selector:
-        text:
-          multiple: true
-    document_type:
-      required: false
-      selector:
-        text:
-          multiple: true
-    tag:
-      required: false
-      selector:
-        text:
-          multiple: true
-    space:
-      required: false
-      selector:
-        text:
-          multiple: true
-    date_from:
-      required: false
-      selector:
-        date:
-    date_to:
-      required: false
-      selector:
-        date:
+    config_entry_id: *config_entry_id
+    inbox: *inbox
+    lane: *lane
+    contact: *names
+    document_type: *names
+    tag: *names
+    space: *names
+    date_from: *date
+    date_to: *date
     limit:
       required: false
       default: 10
