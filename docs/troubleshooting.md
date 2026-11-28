@@ -26,8 +26,10 @@
   **Reconfigure** the entry with the right address.
 - **The document event never fires.** It needs `documents:read` and `admin:documents_all`; without
   them it does not exist. A firewall or proxy that cuts long connections makes the integration
-  connect again and again (the log says "Lost the event stream, connecting again"); it waits up
-  to five minutes between tries, longer when Lekto asks it to.
+  connect again and again; the log says "Lost the event stream" once, with the reason, and "The
+  event stream is back" once it flows again. After a stream that flowed the integration waits
+  five seconds, after each try that fails twice as long, up to five minutes, and longer when
+  Lekto asks it to.
 - **An action fails with "lacks the rights".** Each action needs rights of its own
   ([actions](actions.md)); give them to a new token.
 

@@ -1,5 +1,6 @@
 """The event stream: events pass on, the numbers follow, the stream comes back."""
 
+import logging
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
@@ -11,6 +12,7 @@ from pylekto import (
     LektoAuthenticationError,
     LektoConnectionError,
     LektoError,
+    LektoForbiddenError,
     LektoRateLimitError,
     LektoTimeoutError,
 )
@@ -30,6 +32,14 @@ if TYPE_CHECKING:
     from pytest_homeassistant.common import MockConfigEntry
 
 pytestmark = pytest.mark.stream
+
+
+def _logged(caplog: pytest.LogCaptureFixture) -> list[str]:
+    return [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "custom_components.lekto.stream"
+    ]
 
 
 async def _set_up(hass: HomeAssistant, config_entry: MockConfigEntry) -> list[EventMessage]:
@@ -70,11 +80,10 @@ async def test_reconnect(
 ) -> None:
     """A lost stream is logged once, connected again with growing waits, and its return logged."""
     lost = LektoConnectionError("refused")
-    lekto.events.listen.side_effect = streams(
-        lost, lost, [event("document.node_started", node="ocr", run=1)]
-    )
+    lekto.events.listen.side_effect = streams(lost, lost, [])
 
     with (
+        caplog.at_level(logging.INFO, "custom_components.lekto.stream"),
         patch("custom_components.lekto.stream.sleep", AsyncMock()) as sleep,
         patch.object(LektoCoordinator, "async_request_refresh", AsyncMock()) as refresh,
     ):
@@ -82,9 +91,40 @@ async def test_reconnect(
 
     assert [call.args[0] for call in sleep.await_args_list] == [RETRY_FIRST, RETRY_FIRST * 2]
     assert refresh.await_count == 2
-    assert caplog.text.count("Lost the event stream") == 1
-    assert "The event stream is back" in caplog.text
-    assert [message.type for message in received] == ["document.node_started"]
+    assert _logged(caplog) == ["Lost the event stream: refused", "The event stream is back"]
+    assert received == []
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    "loss",
+    [
+        [],
+        [LektoConnectionError("broken off")],
+        LektoRateLimitError(Problem(title="Too Many Requests", status=429), 42.0),
+        LektoForbiddenError(Problem(title="Forbidden", status=403)),
+    ],
+    ids=["ended", "broken off", "rate limited", "forbidden"],
+)
+async def test_every_loss_logged(
+    hass: HomeAssistant,
+    lekto: MagicMock,
+    config_entry: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
+    loss: list[EventMessage | Exception] | Exception,
+) -> None:
+    """However the stream is lost, the log says so once, and once that it is back."""
+    lekto.events.listen.side_effect = streams(loss, [])
+    failure = loss[0] if isinstance(loss, list) and loss else loss
+    reason = "Lekto ended it" if isinstance(failure, list) else str(failure)
+
+    with (
+        caplog.at_level(logging.INFO, "custom_components.lekto.stream"),
+        patch("custom_components.lekto.stream.sleep", AsyncMock()),
+    ):
+        await _set_up(hass, config_entry)
+
+    assert _logged(caplog) == [f"Lost the event stream: {reason}", "The event stream is back"]
     assert await hass.config_entries.async_unload(config_entry.entry_id)
 
 

@@ -51,6 +51,7 @@ class LektoStream:
         """Start without a connection; ``listen`` makes it."""
         self._coordinator = coordinator
         self._retry = RETRY_FIRST
+        self._lost = False
 
     async def listen(self) -> None:
         """Listen to Lekto's events until the entry unloads, connecting again when the stream ends.
@@ -59,36 +60,41 @@ class LektoStream:
         before each new connection.
         """
         coordinator = self._coordinator
-        lost = False
         while True:
             try:
                 async for event in coordinator.client.events.listen(on_connected=self._flows):
-                    if lost:
-                        _LOGGER.info("The event stream is back")
-                        lost = False
                     self._handle(event)
-            except LektoAuthenticationError:
+            except LektoAuthenticationError as err:
+                self._lose(err)
                 coordinator.config_entry.async_start_reauth(coordinator.hass)
                 return
             except LektoForbiddenError as err:
+                self._lose(err)
                 await coordinator.reload_if_rights_changed()
-                if not lost:
-                    _LOGGER.info("Lost the event stream, connecting again: %s", err)
-                    lost = True
             except LektoRateLimitError as err:
+                self._lose(err)
                 self._retry = max(self._retry, err.retry_after or 0)
             except LektoError as err:
-                if not lost:
-                    _LOGGER.info("Lost the event stream, connecting again: %s", err)
-                    lost = True
+                self._lose(err)
+            else:
+                self._lose("Lekto ended it")
             await sleep(self._retry)
             self._retry = min(self._retry * 2, RETRY_LAST)
             await coordinator.async_request_refresh()
 
     @callback
     def _flows(self) -> None:
-        """Only a stream that flows starts the wait short again, not one that merely answered."""
+        """Only a stream that flows is back, and starts the wait short again: an answer is none."""
         self._retry = RETRY_FIRST
+        if self._lost:
+            _LOGGER.info("The event stream is back")
+            self._lost = False
+
+    def _lose(self, reason: object) -> None:
+        """One line in the log for each loss, however many tries it takes to come back."""
+        if not self._lost:
+            _LOGGER.info("Lost the event stream: %s", reason)
+            self._lost = True
 
     def _handle(self, event: EventMessage) -> None:
         """Every event goes out, so that entities need no stream of their own."""
